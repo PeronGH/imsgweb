@@ -8,12 +8,6 @@ database, wrapped in a single self-contained binary.
 ## Requirements
 
 - macOS with Messages signed in
-- [imsg](https://github.com/openclaw/imsg) on your PATH:
-
-  ```bash
-  brew install steipete/tap/imsg
-  ```
-
 - Full Disk Access for the terminal (or binary) that runs imsgweb —
   System Settings → Privacy & Security → Full Disk Access. Required to
   read the Messages database.
@@ -21,15 +15,19 @@ database, wrapped in a single self-contained binary.
 ## Run
 
 Grab the latest binary from
-[releases](https://github.com/PeronGH/imsgweb/releases) and run it:
+[releases](https://github.com/PeronGH/imsgweb/releases) — it has
+[imsg](https://github.com/openclaw/imsg) embedded, nothing else to
+install — and run it:
 
 ```bash
 ./imsgweb            # serves http://localhost:3000 (PORT to override)
 ```
 
-Or run from source with [Bun](https://bun.sh):
+Or run from source with [Bun](https://bun.sh), which needs imsg on your
+PATH:
 
 ```bash
+brew install steipete/tap/imsg
 bun install
 bun run dev          # dev server with HMR on http://localhost:3000
 ```
