@@ -41,7 +41,7 @@ jobs:
   # 401s from gh against api.github.com (runs 27288482151 / 27288573488)
   release:
     needs: build
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-slim
     permissions:
       contents: write
     steps:
