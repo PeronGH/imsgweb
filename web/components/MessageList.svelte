@@ -9,6 +9,7 @@
 
   const messages = $derived(store.messages[chatId] ?? []);
   const cursor = $derived(store.cursors[chatId]);
+  const loading = $derived(store.historyLoading[chatId] === true);
   const latestOwnId = $derived(
     messages.reduce((acc, m) => (m.is_from_me ? m.id : acc), -1),
   );
@@ -93,7 +94,12 @@
       isLatestOwn={message.id === latestOwnId}
     />
   {/each}
-  {#if messages.length === 0}
+  {#if loading}
+    <div class="flex justify-center py-8 text-gray-400">
+      <LoaderCircle size={20} class="animate-spin" />
+      <span class="sr-only">Loading messages</span>
+    </div>
+  {:else if messages.length === 0}
     <p class="py-8 text-center text-sm text-gray-400">No messages yet</p>
   {/if}
 </div>

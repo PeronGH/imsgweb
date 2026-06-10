@@ -1,4 +1,5 @@
 <script lang="ts">
+  import LoaderCircle from "@lucide/svelte/icons/loader-circle";
   import Users from "@lucide/svelte/icons/users";
   import { shortTime } from "../format";
   import { store } from "../store.svelte";
@@ -34,7 +35,12 @@
       {/if}
     </button>
   {/each}
-  {#if store.chats.length === 0}
+  {#if store.chatsLoading}
+    <div class="flex justify-center py-8 text-gray-400">
+      <LoaderCircle size={20} class="animate-spin" />
+      <span class="sr-only">Loading chats</span>
+    </div>
+  {:else if store.chats.length === 0}
     <p class="px-4 py-6 text-center text-sm text-gray-400">No chats yet</p>
   {/if}
 </nav>

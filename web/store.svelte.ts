@@ -31,6 +31,10 @@ class Store {
   /** Delivery state by message guid, for the status tick. */
   sendStates = $state<Record<string, SendState>>({});
   live = $state(false);
+  /** First chats fetch in flight (the preview aggregation takes a moment). */
+  chatsLoading = $state(false);
+  /** Per chat: first history page in flight. */
+  historyLoading = $state<Record<number, boolean>>({});
   /** On narrow screens the panes are exclusive: list or conversation. */
   sidebarOpen = $state(true);
   /** Message to emphasize after a quote jump; MessageList scrolls to it. */
@@ -52,6 +56,9 @@ class Store {
   }
 
   async loadChats(): Promise<void> {
+    // only block the UI when there is nothing to show yet (background
+    // refreshes after SSE events shouldn't flicker)
+    this.chatsLoading = this.chats.length === 0;
     try {
       const res = await api.chats.$get({ query: {} });
       if (!res.ok) {
@@ -61,6 +68,8 @@ class Store {
       this.chats = (await res.json()).chats;
     } catch {
       toasts.error("Failed to load chats — is the server running?");
+    } finally {
+      this.chatsLoading = false;
     }
   }
 
@@ -138,6 +147,8 @@ class Store {
   }
 
   async loadHistory(chatId: number, before?: string): Promise<void> {
+    const initial = before === undefined && !(chatId in this.messages);
+    if (initial) this.historyLoading[chatId] = true;
     try {
       const res = await api.chats[":chatId"].messages.$get({
         param: { chatId: String(chatId) },
@@ -154,6 +165,8 @@ class Store {
       this.cursors[chatId] = next_before;
     } catch {
       toasts.error("Failed to load messages");
+    } finally {
+      if (initial) this.historyLoading[chatId] = false;
     }
   }
 
