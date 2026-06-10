@@ -43,6 +43,9 @@ All of check, lint, and format must pass before committing.
   Split: `model.ts` (pure data logic, bun-testable), `store.svelte.ts`
   (rune store singleton + API actions), `events.ts` (SSE), `components/`
   (presentational). Frontend types come from `server/payloads.ts`.
+  Icons: `@lucide/svelte`, imported per-icon
+  (`import X from "@lucide/svelte/icons/x"` — never the barrel). Icon-only
+  controls need `aria-label`/`title`.
 - `web/app.css` — `@import "tailwindcss"` (Tailwind v4, no config file).
 
 ## Build pipeline

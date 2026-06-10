@@ -1,4 +1,7 @@
 <script lang="ts">
+  import ArrowUp from "@lucide/svelte/icons/arrow-up";
+  import Paperclip from "@lucide/svelte/icons/paperclip";
+  import X from "@lucide/svelte/icons/x";
   import { store } from "../store.svelte";
 
   let text = $state("");
@@ -44,7 +47,22 @@
     <p class="mb-2 text-sm text-red-600">{store.error}</p>
   {/if}
   {#if file}
-    <p class="mb-2 truncate text-xs text-gray-500">📎 {file.name}</p>
+    <p class="mb-2 flex items-center gap-1.5 text-xs text-gray-500">
+      <Paperclip size={12} />
+      <span class="truncate">{file.name}</span>
+      <button
+        type="button"
+        aria-label="Remove attachment"
+        title="Remove attachment"
+        class="rounded p-0.5 hover:bg-gray-100"
+        onclick={() => {
+          file = null;
+          if (fileInput) fileInput.value = "";
+        }}
+      >
+        <X size={12} />
+      </button>
+    </p>
   {/if}
   <form
     class="flex items-end gap-2"
@@ -56,8 +74,9 @@
     <label
       class="cursor-pointer rounded-full p-2 text-gray-500 hover:bg-gray-100"
       title="Attach a file"
+      aria-label="Attach a file"
     >
-      📎
+      <Paperclip size={18} />
       <input
         bind:this={fileInput}
         type="file"
@@ -76,9 +95,11 @@
     <button
       type="submit"
       disabled={!canSend}
-      class="rounded-full bg-blue-500 px-4 py-1.5 text-white disabled:opacity-40"
+      aria-label="Send"
+      title="Send"
+      class="rounded-full bg-blue-500 p-2 text-white disabled:opacity-40"
     >
-      Send
+      <ArrowUp size={18} />
     </button>
   </form>
 </footer>

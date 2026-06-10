@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Users from "@lucide/svelte/icons/users";
   import { shortTime } from "../format";
   import { store } from "../store.svelte";
 </script>
@@ -13,13 +14,12 @@
       }`}
     >
       <span class="flex items-baseline justify-between gap-2">
-        <span class="truncate font-medium">
-          {chat.display_name}
+        <span class="flex min-w-0 items-center gap-1.5 font-medium">
+          <span class="truncate">{chat.display_name}</span>
           {#if chat.is_group}
-            <span
-              class="ml-1 rounded bg-gray-200 px-1 text-[10px] uppercase text-gray-600"
-            >
-              group
+            <span class="shrink-0 text-gray-400" title="Group chat">
+              <Users size={14} />
+              <span class="sr-only">group</span>
             </span>
           {/if}
         </span>

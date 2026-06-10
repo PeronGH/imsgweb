@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ChevronsUp from "@lucide/svelte/icons/chevrons-up";
+  import LoaderCircle from "@lucide/svelte/icons/loader-circle";
   import { tick } from "svelte";
   import { dayLabel, sameDay } from "../format";
   import { store } from "../store.svelte";
@@ -55,9 +57,15 @@
         type="button"
         disabled={loadingOlder}
         onclick={() => void loadOlder()}
-        class="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600 hover:bg-gray-200 disabled:opacity-50"
+        aria-label="Load older messages"
+        title="Load older messages"
+        class="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200 disabled:opacity-50"
       >
-        {loadingOlder ? "Loading…" : "Load older messages"}
+        {#if loadingOlder}
+          <LoaderCircle size={16} class="animate-spin" />
+        {:else}
+          <ChevronsUp size={16} />
+        {/if}
       </button>
     </div>
   {/if}

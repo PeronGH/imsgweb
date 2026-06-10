@@ -29,6 +29,7 @@
   },
   "dependencies": {
     "@hono/zod-validator": "^0.8.0",
+    "@lucide/svelte": "^1.17.0",
     "hono": "^4.12.25",
     "svelte": "^5.56.3",
     "zod": "^4.4.3"

@@ -1,4 +1,10 @@
 <script lang="ts">
+  import Check from "@lucide/svelte/icons/check";
+  import CheckCheck from "@lucide/svelte/icons/check-check";
+  import CircleAlert from "@lucide/svelte/icons/circle-alert";
+  import Clock from "@lucide/svelte/icons/clock";
+  import FileDown from "@lucide/svelte/icons/file-down";
+  import ImageOff from "@lucide/svelte/icons/image-off";
   import type { ApiMessage } from "../../server/payloads";
   import { bubbleTime } from "../format";
   import { store } from "../store.svelte";
@@ -52,8 +58,12 @@
       {/if}
       {#each message.attachments as attachment (attachment.url)}
         {#if attachment.missing}
-          <div class="my-1 rounded bg-black/10 px-2 py-1 text-xs italic">
-            attachment not downloaded yet
+          <div
+            class="my-1 flex items-center gap-1.5 rounded bg-black/10 px-2 py-1 text-xs italic"
+            title="Not downloaded from iCloud yet"
+          >
+            <ImageOff size={14} />
+            {attachment.transfer_name || "attachment"}
           </div>
         {:else if attachment.mime_type.startsWith("image/")}
           <img
@@ -72,8 +82,9 @@
           <a
             href={attachment.url}
             download={attachment.transfer_name}
-            class="my-1 block text-sm underline"
+            class="my-1 flex items-center gap-1.5 text-sm underline"
           >
+            <FileDown size={16} class="shrink-0" />
             {attachment.transfer_name || "attachment"}
           </a>
         {/if}
@@ -94,16 +105,19 @@
       </div>
     {/if}
     {#if status}
-      <div class="mt-0.5 text-right text-[11px] text-gray-400">
+      <div class="mt-0.5 flex justify-end text-gray-400">
         {#if status === "delivered"}
-          Delivered
-        {:else if status === "failed"}
-          <span class="text-red-500">Failed</span>
+          <span title="Delivered"><CheckCheck size={14} /></span>
         {:else if status === "sent"}
-          Sent
+          <span title="Sent"><Check size={14} /></span>
+        {:else if status === "failed"}
+          <span class="text-red-500" title="Failed">
+            <CircleAlert size={14} />
+          </span>
         {:else}
-          Sending…
+          <span title="Sending…"><Clock size={14} /></span>
         {/if}
+        <span class="sr-only">{status}</span>
       </div>
     {/if}
   </div>
