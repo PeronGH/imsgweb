@@ -1,0 +1,62 @@
+/**
+ * Pure transforms from imsg RPC payloads to the shapes the frontend
+ * consumes. Shared by the history, chats, and SSE routes.
+ */
+import type { ChatPayload, MessagePayload } from "./rpc";
+
+export interface ApiAttachment {
+  /** Browser-cacheable URL served by GET /api/attachments. */
+  url: string;
+  mime_type: string;
+  transfer_name: string;
+  total_bytes: number;
+  is_sticker: boolean;
+  /** Not on disk yet (e.g. pending iCloud download) — may appear later. */
+  missing: boolean;
+}
+
+export type ApiMessage = Omit<MessagePayload, "attachments"> & {
+  attachments: ApiAttachment[];
+};
+
+export interface ChatLastMessage {
+  text: string;
+  sender_name?: string;
+  is_from_me: boolean;
+  created_at: string;
+}
+
+export type ApiChat = ChatPayload & { last_message: ChatLastMessage | null };
+
+export function toApiMessage(message: MessagePayload): ApiMessage {
+  return {
+    ...message,
+    attachments: message.attachments.map((attachment) => ({
+      url: `/api/attachments?path=${encodeURIComponent(
+        attachment.converted_path ?? attachment.filename,
+      )}`,
+      mime_type: attachment.converted_mime_type ?? attachment.mime_type,
+      transfer_name: attachment.transfer_name,
+      total_bytes: attachment.total_bytes,
+      is_sticker: attachment.is_sticker,
+      missing: attachment.missing,
+    })),
+  };
+}
+
+export function toApiChat(
+  chat: ChatPayload,
+  lastMessage: MessagePayload | undefined,
+): ApiChat {
+  return {
+    ...chat,
+    last_message: lastMessage
+      ? {
+          text: lastMessage.text,
+          sender_name: lastMessage.sender_name,
+          is_from_me: lastMessage.is_from_me,
+          created_at: lastMessage.created_at,
+        }
+      : null,
+  };
+}

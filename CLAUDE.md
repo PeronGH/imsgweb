@@ -21,6 +21,11 @@ All of check, lint, and format must pass before committing.
   with `zValidator` from `@hono/zod-validator`. Routes MUST stay in the chained
   style (`new Hono().get(...).post(...)`) — `export type AppType` powers the
   RPC client, and standalone `app.get(...)` calls break type inference.
+  Endpoints expose only imsg's SIP-on surface; live updates are SSE
+  (`/api/events`, resume via Last-Event-ID = message rowid), never WebSocket.
+  The server is stateless: imsg is the source of truth, aggregation happens
+  per request. Helpers: `server/payloads.ts` (RPC → frontend shapes),
+  `server/attachments.ts` (path-validated, browser-cacheable file serving).
 - `web/api.ts` — typed client: `hc<AppType>(...)`. Frontend calls the API only
   through this client.
 - `server/rpc/` — client for the imsg binary (the `imsg/` submodule, pinned

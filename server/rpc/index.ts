@@ -31,6 +31,16 @@ export class RpcError extends Error {
   }
 }
 
+/** The `imsg rpc` child exited — in-flight calls and open watches get this. */
+export class RpcExitError extends Error {
+  override name = "RpcExitError";
+  readonly exitCode: number;
+  constructor(exitCode: number) {
+    super(`imsg rpc exited with code ${exitCode}`);
+    this.exitCode = exitCode;
+  }
+}
+
 /**
  * A live watch subscription. Iterate to consume messages:
  *
@@ -215,7 +225,7 @@ export class RpcClient {
     }
     const code = await proc.exited;
     if (this.#proc === proc) this.#proc = null;
-    const reason = new Error(`imsg rpc exited with code ${code}`);
+    const reason = new RpcExitError(code);
     for (const pending of this.#pending.values()) pending.reject(reason);
     this.#pending.clear();
     for (const watch of this.#watches.values()) {
