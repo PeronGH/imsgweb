@@ -23,6 +23,13 @@ All of check, lint, and format must pass before committing.
   RPC client, and standalone `app.get(...)` calls break type inference.
 - `web/api.ts` — typed client: `hc<AppType>(...)`. Frontend calls the API only
   through this client.
+- `server/rpc/` — client for the imsg binary (the `imsg/` submodule, pinned
+  v0.11.1). Spawns `imsg rpc` from PATH and speaks JSON-RPC 2.0 over NDJSON
+  stdio. `rpc.call(...)` is typed via the method map in `server/rpc/types.ts`
+  (hand-written wire types — keep in sync when bumping the submodule);
+  `rpc.watch(...)` returns an async-iterable message stream.
+- `imsg/` — git submodule, reference only (Swift source + docs); excluded
+  from lint/format. Not built by this repo.
 - `web/` — Svelte 5 with runes (`$state`, `$derived`; `mount` from `svelte`).
   Client-side rendering only: `bun-plugin-svelte` does not support SSR.
 - `web/app.css` — `@import "tailwindcss"` (Tailwind v4, no config file).

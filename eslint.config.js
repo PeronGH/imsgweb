@@ -18,5 +18,5 @@ export default tseslint.config(
       parserOptions: { parser: tseslint.parser },
     },
   },
-  { ignores: ["dist/", "node_modules/"] },
+  { ignores: ["dist/", "node_modules/", "imsg/"] },
 );
