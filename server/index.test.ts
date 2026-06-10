@@ -50,6 +50,42 @@ test("attachment route matches nested store-relative paths", async () => {
   expect(badStore.status).toBe(400);
 });
 
+test("password gate: 401s, login sets a cookie that passes", async () => {
+  process.env["IMSGWEB_PASSWORD"] = "hunter2";
+  try {
+    expect((await app.request("/api/chats")).status).toBe(401);
+    expect((await app.request("/api/events")).status).toBe(401);
+
+    const login = (password: string) =>
+      app.request("/api/auth", {
+        method: "POST",
+        body: JSON.stringify({ password }),
+        headers: { "content-type": "application/json" },
+      });
+    expect((await login("nope")).status).toBe(401);
+
+    const ok = await login("hunter2");
+    expect(ok.status).toBe(200);
+    const setCookie = ok.headers.get("set-cookie") ?? "";
+    expect(setCookie).toContain("imsgweb_auth=");
+    expect(setCookie).toContain("HttpOnly");
+    // the cookie carries a hash, never the password
+    expect(setCookie).not.toContain("hunter2");
+
+    const authed = await app.request("/api/chats?limit=1", {
+      headers: { cookie: setCookie.split(";")[0] ?? "" },
+    });
+    expect(authed.status).toBe(200);
+
+    const badCookie = await app.request("/api/chats?limit=1", {
+      headers: { cookie: "imsgweb_auth=forged" },
+    });
+    expect(badCookie.status).toBe(401);
+  } finally {
+    delete process.env["IMSGWEB_PASSWORD"];
+  }
+});
+
 test("events stream flushes immediately and forwards sends", async () => {
   const controller = new AbortController();
   const res = await app.request("/api/events", { signal: controller.signal });

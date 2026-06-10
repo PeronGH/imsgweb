@@ -1,5 +1,6 @@
 import { zValidator } from "@hono/zod-validator";
 import { Hono } from "hono";
+import { setCookie } from "hono/cookie";
 import { streamSSE } from "hono/streaming";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -9,6 +10,13 @@ import {
   attachmentResponse,
   resolveAttachmentPath,
 } from "./attachments";
+import {
+  AUTH_COOKIE,
+  authToken,
+  configuredPassword,
+  passwordMatches,
+  requireAuth,
+} from "./auth";
 import { toApiChat, toApiMessage } from "./payloads";
 import { rpc, RpcError, RpcErrorCode, RpcExitError } from "./rpc";
 
@@ -41,6 +49,28 @@ const app = new Hono()
     console.error(error);
     return c.json({ error: "internal error" }, 500);
   })
+  .use(requireAuth)
+
+  // Login: sets the auth cookie EventSource needs (it can't send headers).
+  .post(
+    "/auth",
+    zValidator("json", z.object({ password: z.string() })),
+    (c) => {
+      const expected = configuredPassword();
+      if (expected === undefined) return c.json({ ok: true as const });
+      if (!passwordMatches(c.req.valid("json").password, expected)) {
+        return c.json({ error: "wrong password" }, 401);
+      }
+      setCookie(c, AUTH_COOKIE, authToken(expected), {
+        httpOnly: true,
+        sameSite: "Strict",
+        path: "/",
+        maxAge: 60 * 60 * 24 * 30,
+      });
+      return c.json({ ok: true as const });
+    },
+  )
+
   .get("/health", (c) => c.json({ status: "ok" as const }))
 
   // Chat list, aggregated with a last-message preview per chat. The point

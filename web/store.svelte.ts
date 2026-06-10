@@ -62,7 +62,10 @@ class Store {
     try {
       const res = await api.chats.$get({ query: {} });
       if (!res.ok) {
-        toasts.error(await errorDetail(res, "Failed to load chats"));
+        // 401s surface as the login screen, not a toast
+        if (res.status !== 401) {
+          toasts.error(await errorDetail(res, "Failed to load chats"));
+        }
         return;
       }
       this.chats = (await res.json()).chats;
@@ -109,7 +112,9 @@ class Store {
     try {
       const res = await api.messages.$post({ form: { to, text } });
       if (!res.ok) {
-        toasts.error(await errorDetail(res, "Send failed"));
+        if (res.status !== 401) {
+          toasts.error(await errorDetail(res, "Send failed"));
+        }
         return false;
       }
       const result = await res.json();
@@ -155,7 +160,9 @@ class Store {
         query: before === undefined ? {} : { before },
       });
       if (!res.ok) {
-        toasts.error(await errorDetail(res, "Failed to load messages"));
+        if (res.status !== 401) {
+          toasts.error(await errorDetail(res, "Failed to load messages"));
+        }
         return;
       }
       const { messages, next_before } = await res.json();
@@ -184,7 +191,9 @@ class Store {
         },
       });
       if (!res.ok) {
-        toasts.error(await errorDetail(res, "Send failed"));
+        if (res.status !== 401) {
+          toasts.error(await errorDetail(res, "Send failed"));
+        }
         return false;
       }
       const result = await res.json();

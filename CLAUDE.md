@@ -33,9 +33,12 @@ GitHub release. Runs are serialized via a concurrency group.
   (`/api/events`, resume via Last-Event-ID = message rowid), never WebSocket.
   The server is stateless: imsg is the source of truth, aggregation happens
   per request. Helpers: `server/payloads.ts` (RPC → frontend shapes),
-  `server/attachments.ts` (path-validated, browser-cacheable file serving).
+  `server/attachments.ts` (path-validated, browser-cacheable file serving),
+  `server/auth.ts` (optional IMSGWEB_PASSWORD gate — a cookie, not a
+  header, because EventSource can't send headers).
 - `web/api.ts` — typed client: `hc<AppType>(...)`. Frontend calls the API only
-  through this client.
+  through this client; its fetch wrapper is the single 401 interceptor
+  that swaps the app for the login screen.
 - `server/rpc/` — client for the imsg binary (the `imsg/` submodule, pinned
   v0.11.1). Spawns `imsg rpc` from PATH and speaks JSON-RPC 2.0 over NDJSON
   stdio. `rpc.call(...)` is typed via the method map in `server/rpc/types.ts`

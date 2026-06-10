@@ -23,6 +23,10 @@ install — and run it:
 ./imsgweb            # serves http://localhost:3000 (PORT to override)
 ```
 
+Set `IMSGWEB_PASSWORD` to require a password — useful when exposing the
+port beyond localhost. The browser prompts once and keeps a session
+cookie for 30 days.
+
 Or run from source with [Bun](https://bun.sh), which needs imsg on your
 PATH:
 
