@@ -1,8 +1,8 @@
 # imsgweb
 
-Full-stack Bun app that compiles to a single binary. Svelte 5 frontend (`web/`,
-bundled by Bun — no Vite) and a Hono + Zod API (`server/`) with end-to-end
-typed calls via Hono RPC.
+Full-stack Bun app that compiles to a single binary. Svelte 5 + Tailwind v4
+frontend (`web/`, bundled by Bun — no Vite) and a Hono + Zod API (`server/`)
+with end-to-end typed calls via Hono RPC.
 
 ## Usage
 

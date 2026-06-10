@@ -1,105 +1,53 @@
-Default to using Bun instead of Node.js.
+# imsgweb
 
-- Use `bun <file>` instead of `node <file>` or `ts-node <file>`
-- Use `bun test` instead of `jest` or `vitest`
-- Use `bun build <file.html|file.ts|file.css>` instead of `webpack` or `esbuild`
-- Use `bun install` instead of `npm install` or `yarn install` or `pnpm install`
-- Use `bun run <script>` instead of `npm run <script>` or `yarn run <script>` or `pnpm run <script>`
-- Use `bunx <package> <command>` instead of `npx <package> <command>`
-- Bun automatically loads .env, so don't use dotenv.
+Full-stack Bun app that compiles to a single binary (`dist/imsgweb`).
+Svelte 5 SPA in `web/`, Hono + Zod API in `server/`, end-to-end typed via Hono RPC.
+No Vite, no Node.js — Bun bundles everything, including the frontend.
 
-## APIs
+## Commands
 
-- `Bun.serve()` supports WebSockets, HTTPS, and routes. Don't use `express`.
-- `bun:sqlite` for SQLite. Don't use `better-sqlite3`.
-- `Bun.redis` for Redis. Don't use `ioredis`.
-- `Bun.sql` for Postgres. Don't use `pg` or `postgres.js`.
-- `WebSocket` is built-in. Don't use `ws`.
-- Prefer `Bun.file` over `node:fs`'s readFile/writeFile
-- Bun.$`ls` instead of execa.
+- `bun run dev` — dev server with HMR on http://localhost:3000
+- `bun run build` — standalone binary at `dist/imsgweb`
+- `bun run check` — svelte-check (type-checks `.ts` and `.svelte`)
+- `bun run lint` / `bun run format` — ESLint / Prettier
 
-## Testing
+All of check, lint, and format must pass before committing.
 
-Use `bun test` to run tests.
+## Architecture
 
-```ts#index.test.ts
-import { test, expect } from "bun:test";
+- `index.ts` — entry point. `Bun.serve()` serves the imported `web/index.html`
+  at `/` and delegates `/api/*` to the Hono app.
+- `server/index.ts` — Hono app on `.basePath("/api")`. Validate request bodies
+  with `zValidator` from `@hono/zod-validator`. Routes MUST stay in the chained
+  style (`new Hono().get(...).post(...)`) — `export type AppType` powers the
+  RPC client, and standalone `app.get(...)` calls break type inference.
+- `web/api.ts` — typed client: `hc<AppType>(...)`. Frontend calls the API only
+  through this client.
+- `web/` — Svelte 5 with runes (`$state`, `$derived`; `mount` from `svelte`).
+  Client-side rendering only: `bun-plugin-svelte` does not support SSR.
+- `web/app.css` — `@import "tailwindcss"` (Tailwind v4, no config file).
 
-test("hello world", () => {
-  expect(1).toBe(1);
-});
-```
+## Build pipeline
 
-## Frontend
+- Dev: `bunfig.toml` registers `bun-plugin-svelte` and `bun-plugin-tailwind`
+  under `[serve.static]` so the dev server compiles `.svelte` files and
+  Tailwind on the fly.
+- Production: `build.ts` uses the `Bun.build()` JS API with
+  `compile: { outfile }` and the same plugins. A build script is required —
+  the `bun build` CLI does not support plugins.
 
-Use HTML imports with `Bun.serve()`. Don't use `vite`. HTML imports fully support React, CSS, Tailwind.
+## Gotchas
 
-Server:
+- Compiled Bun binaries default `NODE_ENV` to `development`. `build.ts` inlines
+  `process.env.NODE_ENV = "production"` via `define`; don't remove it, or the
+  binary serves unminified assets with HMR enabled.
+- Style with Tailwind utility classes in markup. Tailwind syntax (`@apply`)
+  inside Svelte `<style>` blocks is not processed by the plugin.
 
-```ts#index.ts
-import index from "./index.html"
+## Bun conventions
 
-Bun.serve({
-  routes: {
-    "/": index,
-    "/api/users/:id": {
-      GET: (req) => {
-        return new Response(JSON.stringify({ id: req.params.id }));
-      },
-    },
-  },
-  // optional websocket support
-  websocket: {
-    open: (ws) => {
-      ws.send("Hello, world!");
-    },
-    message: (ws, message) => {
-      ws.send(message);
-    },
-    close: (ws) => {
-      // handle close
-    }
-  },
-  development: {
-    hmr: true,
-    console: true,
-  }
-})
-```
-
-HTML files can import .tsx, .jsx or .js files directly and Bun's bundler will transpile & bundle automatically. `<link>` tags can point to stylesheets and Bun's CSS bundler will bundle.
-
-```html#index.html
-<html>
-  <body>
-    <h1>Hello, world!</h1>
-    <script type="module" src="./frontend.tsx"></script>
-  </body>
-</html>
-```
-
-With the following `frontend.tsx`:
-
-```tsx#frontend.tsx
-import React from "react";
-import { createRoot } from "react-dom/client";
-
-// import .css files directly and it works
-import './index.css';
-
-const root = createRoot(document.body);
-
-export default function Frontend() {
-  return <h1>Hello, world!</h1>;
-}
-
-root.render(<Frontend />);
-```
-
-Then, run index.ts
-
-```sh
-bun --hot ./index.ts
-```
-
-For more information, read the Bun API docs in `node_modules/bun-types/docs/**.mdx`.
+- `bun <file>`, `bun test`, `bun install`, `bunx` — never node/npm/npx/vite/jest.
+- Prefer built-ins: `Bun.serve()`, `bun:sqlite`, `Bun.file`, `Bun.$`, built-in
+  `WebSocket` — over express/better-sqlite3/node:fs/execa/ws.
+- Bun loads `.env` automatically — don't use dotenv.
+- Bun API docs: `node_modules/bun-types/docs/**.mdx`.

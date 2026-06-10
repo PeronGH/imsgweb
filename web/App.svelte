@@ -13,21 +13,22 @@
   }
 </script>
 
-<main>
-  <h1>imsgweb</h1>
-  <form onsubmit={greet}>
-    <input bind:value={name} placeholder="Your name" />
-    <button type="submit">Greet</button>
+<main class="mx-auto mt-8 max-w-2xl px-4 font-sans">
+  <h1 class="text-2xl font-bold">imsgweb</h1>
+  <form onsubmit={greet} class="mt-4 flex gap-2">
+    <input
+      bind:value={name}
+      placeholder="Your name"
+      class="rounded border border-gray-300 px-3 py-1.5"
+    />
+    <button
+      type="submit"
+      class="rounded bg-blue-600 px-4 py-1.5 text-white hover:bg-blue-700"
+    >
+      Greet
+    </button>
   </form>
   {#if greeting}
-    <p>{greeting}</p>
+    <p class="mt-4 text-lg">{greeting}</p>
   {/if}
 </main>
-
-<style>
-  main {
-    max-width: 40rem;
-    margin: 2rem auto;
-    font-family: system-ui, sans-serif;
-  }
-</style>
