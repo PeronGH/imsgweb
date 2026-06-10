@@ -92,6 +92,37 @@ test("toApiMessage keeps reply quotes only for real inline replies", () => {
   expect(realReply.reply_to_text).toBe("previous message");
 });
 
+test("conversions apply only when the browser can't play the original", () => {
+  // CAF voice memo → use the M4A conversion
+  const voice = toApiMessage(
+    makeMessage([
+      makeAttachment({
+        mime_type: "audio/x-caf",
+        uti: "com.apple.coreaudio-format",
+        converted_path: join(CONVERTED, "voice-abc.m4a"),
+        converted_mime_type: "audio/mp4",
+      }),
+    ]),
+  ).attachments[0];
+  expect(voice?.url).toBe("/api/attachments/converted/voice-abc.m4a");
+  expect(voice?.mime_type).toBe("audio/mp4");
+
+  // animated GIF plays natively — keep it over the flattened PNG frame
+  const gif = toApiMessage(
+    makeMessage([
+      makeAttachment({
+        filename: join(ATTACHMENTS, "ab/funny.gif"),
+        mime_type: "image/gif",
+        uti: "com.compuserve.gif",
+        converted_path: join(CONVERTED, "funny-abc.png"),
+        converted_mime_type: "image/png",
+      }),
+    ]),
+  ).attachments[0];
+  expect(gif?.url).toBe("/api/attachments/messages/ab/funny.gif");
+  expect(gif?.mime_type).toBe("image/gif");
+});
+
 test("toApiMessage nulls the URL for files outside the stores", () => {
   const message = toApiMessage(
     makeMessage([makeAttachment({ filename: "/tmp/imsg/whatever.png" })]),

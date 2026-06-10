@@ -92,6 +92,7 @@ const app = new Hono()
         limit,
         end: before,
         attachments: true,
+        convert_attachments: true,
       });
       const ordered = [...messages].sort((a, b) => a.id - b.id);
       return c.json({
@@ -125,6 +126,7 @@ const app = new Hono()
           const watch = await rpc.watch({
             since_rowid: since,
             attachments: true,
+            convert_attachments: true,
             include_reactions: true,
           });
           stream.onAbort(() => void watch.unsubscribe());

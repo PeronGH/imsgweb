@@ -45,17 +45,35 @@ function chatDisplayName(chat: ChatPayload): string {
   return chat.participants.join(", ") || "Unknown";
 }
 
+/** Mimes every browser handles natively — keep the original then (e.g.
+ *  animated GIF, which imsg would flatten to a single PNG frame). */
+const BROWSER_NATIVE_MIME =
+  /^(image\/(png|jpe?g|gif|webp|avif)|audio\/(mpeg|mp4|aac|wav|x-m4a)|video\/(mp4|webm))$/;
+
 export function toApiMessage(message: MessagePayload): ApiMessage {
   const apiMessage: ApiMessage = {
     ...message,
-    attachments: message.attachments.map((attachment) => ({
-      url: attachmentUrl(attachment.converted_path ?? attachment.filename),
-      mime_type: attachment.converted_mime_type ?? attachment.mime_type,
-      transfer_name: attachment.transfer_name,
-      total_bytes: attachment.total_bytes,
-      is_sticker: attachment.is_sticker,
-      missing: attachment.missing,
-    })),
+    attachments: message.attachments.map((attachment) => {
+      // use the ffmpeg conversion (CAF voice memo → M4A, …) only when the
+      // original can't play in a browser
+      const useConverted =
+        attachment.converted_path !== undefined &&
+        !BROWSER_NATIVE_MIME.test(attachment.mime_type);
+      return {
+        url: attachmentUrl(
+          useConverted && attachment.converted_path !== undefined
+            ? attachment.converted_path
+            : attachment.filename,
+        ),
+        mime_type: useConverted
+          ? (attachment.converted_mime_type ?? attachment.mime_type)
+          : attachment.mime_type,
+        transfer_name: attachment.transfer_name,
+        total_bytes: attachment.total_bytes,
+        is_sticker: attachment.is_sticker,
+        missing: attachment.missing,
+      };
+    }),
   };
   // chat.db sets reply_to_guid on ordinary consecutive messages too (it's
   // Apple's send/sequence linkage) — only thread_originator_guid marks a
