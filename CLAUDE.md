@@ -16,6 +16,11 @@ No Vite, no Node.js — Bun bundles everything, including the frontend.
 
 All of check, lint, and format must pass before committing.
 
+CI (`.github/workflows/ci.yml`) runs on every push to main: check/lint/test,
+then builds the binary with imsg embedded (brew-installed on the macOS
+runner), then auto-tags vN (incrementing) and attaches `imsgweb` to a
+GitHub release. Runs are serialized via a concurrency group.
+
 ## Architecture
 
 - `index.ts` — entry point. `Bun.serve()` serves the imported `web/index.html`
