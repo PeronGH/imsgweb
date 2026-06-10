@@ -175,6 +175,17 @@ test("preview text labels placeholder-only messages", () => {
   // placeholder text but attachments not fetched
   const bare = { ...makeMessage([]), text: "￼" };
   expect(toApiChat(chat, bare).last_message?.text).toBe("Attachment");
+  // poll balloon
+  const poll = {
+    ...makeMessage([]),
+    text: "�",
+    poll: {
+      kind: "created" as const,
+      event: "imessage.poll.created" as const,
+      question: "Dinner?",
+    },
+  };
+  expect(toApiChat(chat, poll).last_message?.text).toBe("Poll: Dinner?");
 });
 
 test("toApiMessage labels attachment-only reply quotes", () => {

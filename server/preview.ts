@@ -12,6 +12,7 @@ interface PreviewAttachment {
 interface PreviewMessage {
   text: string;
   attachments: PreviewAttachment[];
+  poll?: { question?: string };
 }
 
 /** Strip attachment (U+FFFC) and app-balloon (U+FFFD) placeholders. */
@@ -32,6 +33,9 @@ function attachmentLabel(attachment: PreviewAttachment): string {
 export function previewText(message: PreviewMessage): string {
   const text = cleanText(message.text);
   if (text !== "") return text;
+  if (message.poll) {
+    return message.poll.question ? `Poll: ${message.poll.question}` : "Poll";
+  }
   const attachment = message.attachments[0];
   if (attachment) return attachmentLabel(attachment);
   if (message.text.includes("￼")) return "Attachment";

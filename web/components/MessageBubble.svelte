@@ -5,6 +5,7 @@
   import Clock from "@lucide/svelte/icons/clock";
   import FileDown from "@lucide/svelte/icons/file-down";
   import ImageOff from "@lucide/svelte/icons/image-off";
+  import Vote from "@lucide/svelte/icons/vote";
   import type { ApiMessage } from "../../server/payloads";
   import { cleanText } from "../../server/preview";
   import { bubbleTime } from "../format";
@@ -25,6 +26,11 @@
     isLatestOwn ? store.sendStates[message.guid] : undefined,
   );
   const highlighted = $derived(store.highlightedGuid === message.guid);
+
+  function voteCount(optionId: string): number {
+    return (message.poll?.votes ?? []).filter((v) => v.option_id === optionId)
+      .length;
+  }
   // the quoted text was resolved preferring the thread originator
   const quotedGuid = $derived(
     message.thread_originator_guid ?? message.reply_to_guid,
@@ -62,6 +68,31 @@
         >
           {message.reply_to_text}
         </button>
+      {/if}
+      {#if message.poll}
+        <div class="my-1 rounded-lg bg-black/10 px-2.5 py-1.5 text-sm">
+          <div class="flex items-center gap-1.5 font-medium">
+            <Vote size={14} class="shrink-0" />
+            {message.poll.question || "Poll"}
+          </div>
+          {#if message.poll.options?.length}
+            <ul class="mt-1 space-y-0.5">
+              {#each message.poll.options as option (option.id)}
+                <li class="flex items-center justify-between gap-3 text-xs">
+                  <span>{option.text}</span>
+                  <span class="tabular-nums opacity-70">
+                    {voteCount(option.id)}
+                  </span>
+                </li>
+              {/each}
+            </ul>
+          {:else if message.poll.kind === "vote" && message.poll.vote}
+            <p class="mt-0.5 text-xs opacity-80">
+              voted: {message.poll.vote.option_text ??
+                message.poll.vote.option_id}
+            </p>
+          {/if}
+        </div>
       {/if}
       {#each message.attachments as attachment (attachment.url)}
         {#if attachment.missing || !attachment.url}
