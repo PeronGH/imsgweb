@@ -40,6 +40,9 @@ All of check, lint, and format must pass before committing.
   from lint/format. Not built by this repo.
 - `web/` — Svelte 5 with runes (`$state`, `$derived`; `mount` from `svelte`).
   Client-side rendering only: `bun-plugin-svelte` does not support SSR.
+  Split: `model.ts` (pure data logic, bun-testable), `store.svelte.ts`
+  (rune store singleton + API actions), `events.ts` (SSE), `components/`
+  (presentational). Frontend types come from `server/payloads.ts`.
 - `web/app.css` — `@import "tailwindcss"` (Tailwind v4, no config file).
 
 ## Build pipeline

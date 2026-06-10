@@ -1,0 +1,123 @@
+/**
+ * App state: a rune-based singleton store. All server access goes through
+ * the typed hc client; all data manipulation goes through web/model.ts.
+ */
+import { api } from "./api";
+import { connectEvents } from "./events";
+import { applyReactionEvent, bumpChat, upsertMessage } from "./model";
+import type { ApiChat, ApiMessage } from "../server/payloads";
+
+export type SendState = "pending" | "sent" | "delivered" | "failed";
+
+class Store {
+  chats = $state<ApiChat[]>([]);
+  selectedChatId = $state<number | null>(null);
+  /** Per chat, sorted oldest→newest by id. */
+  messages = $state<Record<number, ApiMessage[]>>({});
+  /** Per chat: pass back as `before` to page older; null = exhausted. */
+  cursors = $state<Record<number, string | null>>({});
+  /** Delivery state by message guid, for the status tick. */
+  sendStates = $state<Record<string, SendState>>({});
+  live = $state(false);
+  error = $state<string | null>(null);
+
+  selectedChat = $derived(
+    this.chats.find((chat) => chat.id === this.selectedChatId),
+  );
+
+  async start(): Promise<void> {
+    connectEvents({
+      onMessage: (message) => this.handleEvent(message),
+      onStateChange: (live) => (this.live = live),
+    });
+    await this.loadChats();
+  }
+
+  async loadChats(): Promise<void> {
+    const res = await api.chats.$get({ query: {} });
+    if (res.ok) this.chats = (await res.json()).chats;
+  }
+
+  async select(chatId: number): Promise<void> {
+    this.selectedChatId = chatId;
+    if (!(chatId in this.messages)) await this.loadHistory(chatId);
+  }
+
+  async loadOlder(chatId: number): Promise<void> {
+    const cursor = this.cursors[chatId];
+    if (cursor != null) await this.loadHistory(chatId, cursor);
+  }
+
+  async loadHistory(chatId: number, before?: string): Promise<void> {
+    const res = await api.chats[":chatId"].messages.$get({
+      param: { chatId: String(chatId) },
+      query: before === undefined ? {} : { before },
+    });
+    if (!res.ok) return;
+    const { messages, next_before } = await res.json();
+    let merged = this.messages[chatId] ?? [];
+    for (const message of messages) merged = upsertMessage(merged, message);
+    this.messages[chatId] = merged;
+    this.cursors[chatId] = next_before;
+  }
+
+  /** Send to the selected chat. The bubble itself arrives via the SSE echo
+   *  (no optimistic insert); delivery state is polled into sendStates. */
+  async send(input: { text?: string; file?: File }): Promise<boolean> {
+    const chat = this.selectedChat;
+    if (!chat) return false;
+    this.error = null;
+    const res = await api.messages.$post({
+      form: {
+        chat_id: String(chat.id),
+        ...(input.text !== undefined ? { text: input.text } : {}),
+        ...(input.file !== undefined ? { file: input.file } : {}),
+      },
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      let detail = `send failed (${res.status})`;
+      try {
+        const parsed = JSON.parse(body) as { error?: string };
+        if (parsed.error !== undefined) detail = parsed.error;
+      } catch {
+        // keep the generic message
+      }
+      this.error = detail;
+      return false;
+    }
+    const result = await res.json();
+    if (result.guid !== undefined) void this.trackSendStatus(result.guid);
+    return true;
+  }
+
+  async trackSendStatus(guid: string): Promise<void> {
+    this.sendStates[guid] = "pending";
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const res = await api.messages[":guid"].status.$get({ param: { guid } });
+      if (res.ok) {
+        const { send_state } = await res.json();
+        this.sendStates[guid] = send_state;
+        if (send_state === "delivered" || send_state === "failed") return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+  }
+
+  handleEvent(message: ApiMessage): void {
+    if (message.is_reaction) {
+      const list = this.messages[message.chat_id];
+      if (list) {
+        this.messages[message.chat_id] = applyReactionEvent(list, message);
+      }
+      return;
+    }
+    const list = this.messages[message.chat_id];
+    if (list) this.messages[message.chat_id] = upsertMessage(list, message);
+    const bumped = bumpChat(this.chats, message);
+    if (bumped === null) void this.loadChats();
+    else this.chats = bumped;
+  }
+}
+
+export const store = new Store();
