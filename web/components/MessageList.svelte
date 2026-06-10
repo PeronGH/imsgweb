@@ -78,7 +78,7 @@
 <div
   bind:this={container}
   onscroll={onScroll}
-  class="flex-1 overflow-y-auto px-4 py-3"
+  class="min-h-0 flex-1 overflow-y-auto px-4 py-3"
 >
   {#if loadingOlder}
     <div class="mb-3 flex justify-center text-gray-400">

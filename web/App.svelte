@@ -19,7 +19,7 @@
 {#if auth.required}
   <Login />
 {:else}
-  <div class="flex h-screen bg-white text-gray-900">
+  <div class="flex h-dvh overflow-hidden bg-white text-gray-900">
     <aside
       class={`${store.sidebarOpen ? "flex" : "hidden"} w-full shrink-0 flex-col border-r border-gray-200 md:w-80`}
     >

@@ -5,7 +5,7 @@
   import { store } from "../store.svelte";
 </script>
 
-<nav class="flex-1 overflow-y-auto">
+<nav class="min-h-0 flex-1 overflow-y-auto">
   {#each store.chats as chat (chat.id)}
     <button
       type="button"

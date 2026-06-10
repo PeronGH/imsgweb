@@ -28,7 +28,7 @@
   }
 </script>
 
-<div class="flex h-screen items-center justify-center bg-white text-gray-900">
+<div class="flex h-dvh items-center justify-center bg-white text-gray-900">
   <form
     class="flex w-72 flex-col items-center gap-3"
     onsubmit={(event) => {
