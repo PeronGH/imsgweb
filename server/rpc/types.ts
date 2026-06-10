@@ -116,7 +116,8 @@ export interface ExistingChatTarget {
   chat_id?: number;
   /** e.g. "+15551234567", or "chat123…" for groups. */
   chat_identifier?: string;
-  /** e.g. "iMessage;-;+15551234567"; a ";+;" infix marks a group. */
+  /** e.g. "iMessage;-;+15551234567"; a ";+;" infix marks a group. The
+   *  service prefix can also be "any" (observed) — only rely on the infix. */
   chat_guid?: string;
 }
 export type ChatTarget = DirectTarget | ExistingChatTarget;
@@ -140,7 +141,9 @@ export interface ChatPayload {
 }
 
 export interface AttachmentPayload {
-  /** Resolved absolute path on disk. */
+  /** Path on disk — OBSERVED to keep the ~ prefix from chat.db (real
+   *  v0.11.1 output), while original_path arrives resolved; always expand
+   *  ~ before touching the filesystem. */
   filename: string;
   /** Original filename as transferred. */
   transfer_name: string;
@@ -149,7 +152,7 @@ export interface AttachmentPayload {
   mime_type: string;
   total_bytes: number;
   is_sticker: boolean;
-  /** Path exactly as stored in chat.db (may contain ~). */
+  /** Observed as the resolved absolute path. */
   original_path: string;
   /** Not on disk (e.g. pending iCloud download) — can appear later, so
    *  never cache a miss. */
@@ -216,7 +219,9 @@ export interface MessagePayload {
   chat_id: number;
   /** Stable across devices; "" only for synthetic rows. */
   guid: string;
-  /** For is_from_me rows this is your own handle or "". */
+  /** OBSERVED (v0.11.1): on is_from_me rows in 1:1 chats this is the
+   *  PEER's handle, not your own — never use sender alone to identify who
+   *  acted; combine with is_from_me. */
   sender: string;
   sender_name?: string;
   is_from_me: boolean;
@@ -236,7 +241,8 @@ export interface MessagePayload {
   reply_to_text?: string;
   reply_to_sender?: string;
 
-  /** Which of your aliases sent an is_from_me row. */
+  /** Which of your aliases routed the message. Observed on incoming rows
+   *  too, not just is_from_me. */
   destination_caller_id?: string;
 
   poll?: PollEventPayload;

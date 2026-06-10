@@ -37,7 +37,8 @@ function makeMessage(
     id,
     chat_id: chat.id,
     guid: `MOCK-${id}`,
-    sender: opts.fromMe ? "" : (opts.sender ?? chat.participants[0] ?? ""),
+    // real imsg reports the peer's handle even on is_from_me rows
+    sender: opts.sender ?? chat.participants[0] ?? "",
     is_from_me: opts.fromMe ?? false,
     text,
     created_at: opts.createdAt ?? new Date().toISOString(),

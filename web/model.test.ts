@@ -67,7 +67,18 @@ test("applyReactionEvent adds and removes aggregated reactions", () => {
   // the event row itself is never inserted
   expect(added).toHaveLength(1);
 
-  const remove = makeMessage(21, {
+  // imsg reports the peer's handle as sender even for own reactions, so
+  // identity must include is_from_me: removing MY love must not drop theirs
+  const ownRemove = makeMessage(21, {
+    is_reaction: true,
+    reaction_type: "love",
+    is_reaction_add: false,
+    is_from_me: true,
+    reacted_to_guid: "G-10",
+  });
+  expect(applyReactionEvent(added, ownRemove)[0]?.reactions).toHaveLength(1);
+
+  const remove = makeMessage(22, {
     is_reaction: true,
     reaction_type: "love",
     is_reaction_add: false,

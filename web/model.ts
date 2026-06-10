@@ -37,8 +37,15 @@ export function applyReactionEvent(
   const target = index === -1 ? undefined : list[index];
   if (!target) return list;
 
+  // sender alone is ambiguous: imsg reports the PEER's handle even on
+  // is_from_me rows, so own and peer reactions can share a sender
   const withoutSenders = target.reactions.filter(
-    (r) => !(r.sender === event.sender && r.type === event.reaction_type),
+    (r) =>
+      !(
+        r.sender === event.sender &&
+        r.is_from_me === event.is_from_me &&
+        r.type === event.reaction_type
+      ),
   );
   const reactions = event.is_reaction_add
     ? [
