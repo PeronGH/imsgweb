@@ -22,9 +22,16 @@
     "noUncheckedIndexedAccess": true,
     "noImplicitOverride": true,
 
-    // Some stricter flags (disabled by default)
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noPropertyAccessFromIndexSignature": false
+    // Stricter flags (not included in "strict")
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noPropertyAccessFromIndexSignature": true,
+    // exactOptionalPropertyTypes is off: bun-plugin-svelte ships .ts source
+    // (no .d.ts), so its code is checked with our flags and fails under it.
+    "noImplicitReturns": true,
+    "noUncheckedSideEffectImports": true,
+
+    // Bun erases types without transpiling; ban enums/namespaces etc.
+    "erasableSyntaxOnly": true
   }
 }
