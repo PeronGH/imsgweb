@@ -23,9 +23,14 @@ install — and run it:
 ./imsgweb            # serves http://localhost:3000 (PORT to override)
 ```
 
-Set `IMSGWEB_PASSWORD` to require a password — useful when exposing the
-port beyond localhost. The browser prompts once and keeps a session
-cookie for 30 days.
+By default it listens on loopback only. To reach it from other devices,
+set `HOST=0.0.0.0` — and pair it with `IMSGWEB_PASSWORD`, which gates the
+API behind a password (the browser prompts once and keeps a session
+cookie for 30 days):
+
+```bash
+HOST=0.0.0.0 IMSGWEB_PASSWORD=secret ./imsgweb
+```
 
 Or run from source with [Bun](https://bun.sh), which needs imsg on your
 PATH:
