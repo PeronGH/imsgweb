@@ -283,4 +283,7 @@ export class RpcClient {
  * IMSGWEB_RPC_CMD="bun server/rpc/mock.ts" to run against the fixture mock
  * without the imsg binary or Full Disk Access.
  */
-export const rpc = new RpcClient(process.env["IMSGWEB_RPC_CMD"]?.split(" "));
+const cmdOverride = process.env["IMSGWEB_RPC_CMD"]?.trim();
+export const rpc = new RpcClient(
+  cmdOverride ? cmdOverride.split(/\s+/) : undefined,
+);
