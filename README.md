@@ -14,14 +14,20 @@ database, wrapped in a single self-contained binary.
 
 ## Run
 
-Grab the latest binary from
+Download the latest `imsgweb` binary from
 [releases](https://github.com/PeronGH/imsgweb/releases) — it has
 [imsg](https://github.com/openclaw/imsg) embedded, nothing else to
-install — and run it:
+install. Then, in Terminal:
 
 ```bash
-./imsgweb            # serves http://localhost:3000 (PORT to override)
+cd ~/Downloads                          # or wherever you saved it
+chmod +x imsgweb                        # downloads aren't executable
+xattr -d com.apple.quarantine imsgweb   # let macOS run an unsigned download
+./imsgweb                               # serves http://localhost:3000
 ```
+
+Open http://localhost:3000 in your browser. Use `PORT` to change the
+port.
 
 By default it listens on loopback only. To reach it from other devices,
 set `HOST=0.0.0.0` — and pair it with `IMSGWEB_PASSWORD`, which gates the
