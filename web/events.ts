@@ -19,6 +19,8 @@ export function connectEvents(handlers: {
   source.addEventListener("open", () => handlers.onStateChange(true));
   source.addEventListener("error", () => handlers.onStateChange(false));
   source.addEventListener("message", (event) => {
+    // receiving data proves the stream is live even if `open` was missed
+    handlers.onStateChange(true);
     try {
       handlers.onMessage(JSON.parse(event.data as string) as ApiMessage);
     } catch {

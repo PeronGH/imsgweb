@@ -1,5 +1,4 @@
 <script lang="ts">
-  import ChevronsUp from "@lucide/svelte/icons/chevrons-up";
   import LoaderCircle from "@lucide/svelte/icons/loader-circle";
   import { tick } from "svelte";
   import { dayLabel, sameDay } from "../format";
@@ -23,6 +22,8 @@
     nearBottom =
       container.scrollHeight - container.scrollTop - container.clientHeight <
       80;
+    // reaching the top loads the next page automatically
+    if (container.scrollTop < 60) void loadOlder();
   }
 
   // Autoscroll on new messages, but only when already reading the bottom.
@@ -31,8 +32,22 @@
     if (container && nearBottom) container.scrollTop = container.scrollHeight;
   });
 
+  // When the history is shorter than the viewport there are no scroll
+  // events — keep paging until it overflows or the cursor is exhausted.
+  $effect(() => {
+    void messages.length;
+    if (
+      container &&
+      cursor != null &&
+      !loadingOlder &&
+      container.scrollHeight <= container.clientHeight
+    ) {
+      void loadOlder();
+    }
+  });
+
   async function loadOlder() {
-    if (!container || loadingOlder) return;
+    if (!container || loadingOlder || cursor == null) return;
     loadingOlder = true;
     const previousHeight = container.scrollHeight;
     try {
@@ -51,22 +66,10 @@
   onscroll={onScroll}
   class="flex-1 overflow-y-auto px-4 py-3"
 >
-  {#if cursor}
-    <div class="mb-3 text-center">
-      <button
-        type="button"
-        disabled={loadingOlder}
-        onclick={() => void loadOlder()}
-        aria-label="Load older messages"
-        title="Load older messages"
-        class="rounded-full bg-gray-100 p-1.5 text-gray-600 hover:bg-gray-200 disabled:opacity-50"
-      >
-        {#if loadingOlder}
-          <LoaderCircle size={16} class="animate-spin" />
-        {:else}
-          <ChevronsUp size={16} />
-        {/if}
-      </button>
+  {#if loadingOlder}
+    <div class="mb-3 flex justify-center text-gray-400">
+      <LoaderCircle size={16} class="animate-spin" />
+      <span class="sr-only">Loading older messages</span>
     </div>
   {/if}
   {#each messages as message, index (message.id)}

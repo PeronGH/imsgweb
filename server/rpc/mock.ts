@@ -249,9 +249,16 @@ function handle(request: MockRequest): void {
         return;
       }
       const limit = num(params, "limit") ?? 50;
-      reply(id, {
-        messages: messages.filter((m) => m.chat_id === chat.id).slice(-limit),
-      });
+      const end = str(params, "end");
+      // faithful to imsg: newest-first response, `end` bound is exclusive
+      const rows = messages
+        .filter(
+          (m) =>
+            m.chat_id === chat.id && (end === undefined || m.created_at < end),
+        )
+        .sort((a, b) => b.id - a.id)
+        .slice(0, limit);
+      reply(id, { messages: rows });
       return;
     }
 

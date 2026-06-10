@@ -60,8 +60,10 @@ const app = new Hono()
     },
   )
 
-  // History page, oldest→newest. Page older messages by passing back
-  // next_before; the bound is inclusive so upsert by message id.
+  // History page, normalized to oldest→newest. imsg returns newest-first
+  // (docs/rpc.md claims the opposite; the handler never reverses its
+  // date-DESC query) and its `end` bound is exclusive (m.date < end), so
+  // next_before = oldest created_at pages without duplicates.
   .get(
     "/chats/:chatId/messages",
     zValidator(
@@ -81,10 +83,11 @@ const app = new Hono()
         end: before,
         attachments: true,
       });
+      const ordered = [...messages].sort((a, b) => a.id - b.id);
       return c.json({
-        messages: messages.map(toApiMessage),
+        messages: ordered.map(toApiMessage),
         next_before:
-          messages.length === limit ? (messages[0]?.created_at ?? null) : null,
+          messages.length === limit ? (ordered[0]?.created_at ?? null) : null,
       });
     },
   )
@@ -106,6 +109,9 @@ const app = new Hono()
       return streamSSE(
         c,
         async (stream) => {
+          // flush a first byte so the browser's EventSource fires `open`
+          // immediately instead of waiting for the first event
+          await stream.write(": connected\n\n");
           const watch = await rpc.watch({
             since_rowid: since,
             attachments: true,

@@ -59,6 +59,10 @@ All of check, lint, and format must pass before committing.
 
 ## Gotchas
 
+- imsg's RPC `messages.history` returns NEWEST-first and its `end` bound is
+  exclusive — docs/rpc.md claims the opposite on both counts. Trust
+  `server/rpc/types.ts` (verified against the Swift source), not the docs.
+
 - Compiled Bun binaries default `NODE_ENV` to `development`. `build.ts` inlines
   `process.env.NODE_ENV = "production"` via `define`; don't remove it, or the
   binary serves unminified assets with HMR enabled.

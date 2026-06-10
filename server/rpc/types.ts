@@ -272,12 +272,16 @@ export interface ChatsListResult {
 export interface MessagesHistoryParams {
   /** chat.db ROWID. */
   chat_id: number;
-  /** Default 50 — the most recent N within the window, ordered
-   *  oldest→newest. No rowid cursor; page by shrinking `end`. */
+  /** Default 50 — the most recent N within the window, returned
+   *  NEWEST→OLDEST (docs/rpc.md claims oldest→newest, but the handler
+   *  never reverses its date-DESC query — sort client-side). No rowid
+   *  cursor; page by passing the oldest received created_at as `end`. */
   limit?: number;
   /** Filter by sender handle. */
   participants?: string[];
+  /** Inclusive (m.date >= start). */
   start?: Iso8601;
+  /** EXCLUSIVE (m.date < end), despite docs saying inclusive. */
   end?: Iso8601;
   attachments?: boolean;
   convert_attachments?: boolean;

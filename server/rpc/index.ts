@@ -86,6 +86,12 @@ function spawnRpcProcess(cmd: string[]) {
 }
 type RpcProcess = ReturnType<typeof spawnRpcProcess>;
 
+/** Resolved at spawn time so IMSGWEB_RPC_CMD can be set after import. */
+function defaultCmd(): string[] {
+  const override = process.env["IMSGWEB_RPC_CMD"]?.trim();
+  return override ? override.split(/\s+/) : ["imsg", "rpc"];
+}
+
 /** The params argument is optional only when every param is optional. */
 type CallArgs<M extends ImsgMethod> =
   Record<never, never> extends ImsgRpcMethods[M]["params"]
@@ -93,16 +99,17 @@ type CallArgs<M extends ImsgMethod> =
     : [params: ImsgRpcMethods[M]["params"]];
 
 export class RpcClient {
-  readonly #cmd: string[];
+  readonly #cmd: string[] | null;
   #proc: RpcProcess | null = null;
   #stopping = false;
   #nextId = 1;
   readonly #pending = new Map<RpcId, PendingCall>();
   readonly #watches = new Map<number, WatchController>();
 
-  /** @param cmd Override the spawned command (default: `imsg rpc` from PATH). */
-  constructor(cmd: string[] = ["imsg", "rpc"]) {
-    this.#cmd = cmd;
+  /** @param cmd Override the spawned command (default: `imsg rpc` from
+   *  PATH, or IMSGWEB_RPC_CMD when set). */
+  constructor(cmd?: string[]) {
+    this.#cmd = cmd ?? null;
   }
 
   /** Spawn the child now; otherwise it starts lazily on the first call. */
@@ -200,7 +207,7 @@ export class RpcClient {
   #ensureProcess(): RpcProcess {
     if (!this.#proc) {
       this.#stopping = false;
-      this.#proc = spawnRpcProcess(this.#cmd);
+      this.#proc = spawnRpcProcess(this.#cmd ?? defaultCmd());
       void this.#pump(this.#proc);
     }
     return this.#proc;
@@ -283,7 +290,4 @@ export class RpcClient {
  * IMSGWEB_RPC_CMD="bun server/rpc/mock.ts" to run against the fixture mock
  * without the imsg binary or Full Disk Access.
  */
-const cmdOverride = process.env["IMSGWEB_RPC_CMD"]?.trim();
-export const rpc = new RpcClient(
-  cmdOverride ? cmdOverride.split(/\s+/) : undefined,
-);
+export const rpc = new RpcClient();
