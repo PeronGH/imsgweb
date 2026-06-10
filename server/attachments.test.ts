@@ -3,6 +3,7 @@ import { homedir, tmpdir } from "node:os";
 import { join } from "node:path";
 import {
   attachmentResponse,
+  attachmentUrl,
   isFresh,
   parseRange,
   resolveAttachmentPath,
@@ -11,28 +12,36 @@ import {
 const ATTACHMENTS = join(homedir(), "Library/Messages/Attachments");
 const CONVERTED = join(homedir(), "Library/Caches/imsg/converted-attachments");
 
-test("resolveAttachmentPath accepts files inside the two stores", () => {
-  expect(resolveAttachmentPath(join(ATTACHMENTS, "ab/cd/photo.heic"))).toBe(
+test("attachmentUrl maps store paths to short URLs and round-trips", () => {
+  expect(attachmentUrl(join(ATTACHMENTS, "ab/cd/photo.heic"))).toBe(
+    "/api/attachments/messages/ab/cd/photo.heic",
+  );
+  expect(attachmentUrl(join(CONVERTED, "voice abc.m4a"))).toBe(
+    "/api/attachments/converted/voice%20abc.m4a",
+  );
+  expect(attachmentUrl("~/Library/Messages/Attachments/ab/photo.heic")).toBe(
+    "/api/attachments/messages/ab/photo.heic",
+  );
+  // what the URL encodes must resolve back to the same file
+  expect(resolveAttachmentPath("messages", "ab/cd/photo.heic")).toBe(
     join(ATTACHMENTS, "ab/cd/photo.heic"),
   );
-  expect(resolveAttachmentPath(join(CONVERTED, "voice-abc.m4a"))).toBe(
-    join(CONVERTED, "voice-abc.m4a"),
+  expect(resolveAttachmentPath("converted", "voice abc.m4a")).toBe(
+    join(CONVERTED, "voice abc.m4a"),
   );
-  expect(
-    resolveAttachmentPath("~/Library/Messages/Attachments/ab/photo.heic"),
-  ).toBe(join(ATTACHMENTS, "ab/photo.heic"));
 });
 
-test("resolveAttachmentPath rejects everything else", () => {
-  expect(resolveAttachmentPath("/etc/passwd")).toBeNull();
-  expect(resolveAttachmentPath(join(homedir(), ".ssh/id_ed25519"))).toBeNull();
-  // traversal out of the allowed root
-  expect(
-    resolveAttachmentPath(join(ATTACHMENTS, "../../../.ssh/id_ed25519")),
-  ).toBeNull();
-  // prefix sibling (…/AttachmentsEvil/) and the bare root itself
-  expect(resolveAttachmentPath(ATTACHMENTS + "Evil/x")).toBeNull();
-  expect(resolveAttachmentPath(ATTACHMENTS)).toBeNull();
+test("attachmentUrl refuses paths outside the stores", () => {
+  expect(attachmentUrl("/etc/passwd")).toBeNull();
+  expect(attachmentUrl(ATTACHMENTS + "Evil/x")).toBeNull();
+  expect(attachmentUrl(ATTACHMENTS)).toBeNull();
+});
+
+test("resolveAttachmentPath rejects traversal out of the root", () => {
+  expect(resolveAttachmentPath("messages", "../../.ssh/id_ed25519")).toBeNull();
+  expect(resolveAttachmentPath("messages", "..")).toBeNull();
+  expect(resolveAttachmentPath("messages", "a/../../etc/passwd")).toBeNull();
+  expect(resolveAttachmentPath("converted", "/etc/passwd")).toBeNull();
 });
 
 test("isFresh matches ETags and falls back to If-Modified-Since", () => {

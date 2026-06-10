@@ -4,7 +4,11 @@ import { streamSSE } from "hono/streaming";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { z } from "zod";
-import { attachmentResponse, resolveAttachmentPath } from "./attachments";
+import {
+  ATTACHMENT_STORES,
+  attachmentResponse,
+  resolveAttachmentPath,
+} from "./attachments";
 import { toApiChat, toApiMessage } from "./payloads";
 import { rpc, RpcError, RpcErrorCode, RpcExitError } from "./rpc";
 
@@ -180,17 +184,22 @@ const app = new Hono()
   )
 
   // Attachment bytes, browser-cacheable (immutable files + ETag/304/Range).
+  // URLs are store-relative; see attachmentUrl in server/attachments.ts.
   .get(
-    "/attachments",
-    zValidator("query", z.object({ path: z.string().min(1) })),
+    "/attachments/:store/:path{.+}",
+    zValidator(
+      "param",
+      z.object({ store: z.enum(ATTACHMENT_STORES), path: z.string().min(1) }),
+    ),
     async (c) => {
-      const path = resolveAttachmentPath(c.req.valid("query").path);
-      if (path === null) {
+      const { store, path } = c.req.valid("param");
+      const filePath = resolveAttachmentPath(store, path);
+      if (filePath === null) {
         return c.json({ error: "not found" }, 404, {
           "cache-control": "no-store",
         });
       }
-      return attachmentResponse(path, c.req.raw.headers);
+      return attachmentResponse(filePath, c.req.raw.headers);
     },
   );
 

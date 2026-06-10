@@ -2,11 +2,13 @@
  * Pure transforms from imsg RPC payloads to the shapes the frontend
  * consumes. Shared by the history, chats, and SSE routes.
  */
+import { attachmentUrl } from "./attachments";
 import type { ChatPayload, MessagePayload } from "./rpc";
 
 export interface ApiAttachment {
-  /** Browser-cacheable URL served by GET /api/attachments. */
-  url: string;
+  /** Browser-cacheable URL served by GET /api/attachments/…; null when the
+   *  file lives outside the known stores and cannot be served. */
+  url: string | null;
   mime_type: string;
   transfer_name: string;
   total_bytes: number;
@@ -46,9 +48,7 @@ export function toApiMessage(message: MessagePayload): ApiMessage {
   return {
     ...message,
     attachments: message.attachments.map((attachment) => ({
-      url: `/api/attachments?path=${encodeURIComponent(
-        attachment.converted_path ?? attachment.filename,
-      )}`,
+      url: attachmentUrl(attachment.converted_path ?? attachment.filename),
       mime_type: attachment.converted_mime_type ?? attachment.mime_type,
       transfer_name: attachment.transfer_name,
       total_bytes: attachment.total_bytes,

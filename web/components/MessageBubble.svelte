@@ -57,10 +57,12 @@
         </div>
       {/if}
       {#each message.attachments as attachment (attachment.url)}
-        {#if attachment.missing}
+        {#if attachment.missing || !attachment.url}
           <div
             class="my-1 flex items-center gap-1.5 rounded bg-black/10 px-2 py-1 text-xs italic"
-            title="Not downloaded from iCloud yet"
+            title={attachment.missing
+              ? "Not downloaded from iCloud yet"
+              : "Unavailable"}
           >
             <ImageOff size={14} />
             {attachment.transfer_name || "attachment"}

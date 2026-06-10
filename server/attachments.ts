@@ -1,32 +1,58 @@
 /**
  * Serves local attachment files to the browser with long-lived caching.
  *
- * The `path` query param is attacker-controllable; resolveAttachmentPath's
- * prefix check against imsg's two attachment stores is the entire trust
- * model — everything else 404s.
+ * URLs are store-relative (/api/attachments/<store>/<relative path>) so
+ * they don't leak the home directory and stay short. The URL path is
+ * attacker-controllable; resolveAttachmentPath's prefix check against
+ * imsg's two attachment stores is the entire trust model — everything
+ * else 404s.
  */
 import { homedir } from "node:os";
 import { resolve, sep } from "node:path";
 
-const ALLOWED_ROOTS = [
+const ROOTS = {
   // original attachments, as stored by Messages.app
-  resolve(homedir(), "Library/Messages/Attachments"),
+  messages: resolve(homedir(), "Library/Messages/Attachments"),
   // imsg's ffmpeg conversion cache (content-addressed names)
-  resolve(homedir(), "Library/Caches/imsg/converted-attachments"),
+  converted: resolve(homedir(), "Library/Caches/imsg/converted-attachments"),
+} as const;
+export type AttachmentStore = keyof typeof ROOTS;
+export const ATTACHMENT_STORES = Object.keys(ROOTS) as [
+  AttachmentStore,
+  ...AttachmentStore[],
 ];
 
 /** Files here are immutable: originals never change once written, and
  *  converted names embed a hash of the source's size+mtime. */
 const CACHE_FOREVER = "private, max-age=31536000, immutable";
 
-export function resolveAttachmentPath(raw: string): string | null {
-  const expanded = raw.startsWith("~/")
-    ? resolve(homedir(), raw.slice(2))
-    : raw;
-  const resolved = resolve(expanded);
-  return ALLOWED_ROOTS.some((root) => resolved.startsWith(root + sep))
-    ? resolved
-    : null;
+/** Map an absolute path from an imsg payload to its serving URL; null when
+ *  it lives outside the stores (rare: imsg's tmp-dir conversion fallback). */
+export function attachmentUrl(rawPath: string): string | null {
+  const path = resolve(
+    rawPath.startsWith("~/") ? resolve(homedir(), rawPath.slice(2)) : rawPath,
+  );
+  for (const store of ATTACHMENT_STORES) {
+    const root = ROOTS[store];
+    if (path.startsWith(root + sep)) {
+      const relative = path
+        .slice(root.length + 1)
+        .split(sep)
+        .map(encodeURIComponent)
+        .join("/");
+      return `/api/attachments/${store}/${relative}`;
+    }
+  }
+  return null;
+}
+
+export function resolveAttachmentPath(
+  store: AttachmentStore,
+  relativePath: string,
+): string | null {
+  const root = ROOTS[store];
+  const resolved = resolve(root, relativePath);
+  return resolved.startsWith(root + sep) ? resolved : null;
 }
 
 /** True when the client's cached copy is still valid (→ 304). */

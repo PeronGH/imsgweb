@@ -1,6 +1,11 @@
 import { expect, test } from "bun:test";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { toApiChat, toApiMessage } from "./payloads";
 import type { AttachmentPayload, ChatPayload, MessagePayload } from "./rpc";
+
+const ATTACHMENTS = join(homedir(), "Library/Messages/Attachments");
+const CONVERTED = join(homedir(), "Library/Caches/imsg/converted-attachments");
 
 function makeMessage(attachments: AttachmentPayload[]): MessagePayload {
   return {
@@ -25,7 +30,7 @@ function makeAttachment(
   overrides: Partial<AttachmentPayload>,
 ): AttachmentPayload {
   return {
-    filename: "/Users/x/Library/Messages/Attachments/ab/photo.heic",
+    filename: join(ATTACHMENTS, "ab/photo.heic"),
     transfer_name: "photo.heic",
     uti: "public.heic",
     mime_type: "image/heic",
@@ -37,16 +42,14 @@ function makeAttachment(
   };
 }
 
-test("toApiMessage rewrites attachments to encoded API URLs", () => {
+test("toApiMessage rewrites attachments to store-relative URLs", () => {
   const message = toApiMessage(
     makeMessage([
-      makeAttachment({
-        filename: "/Users/x/Library/Messages/Attachments/a b/photo.heic",
-      }),
+      makeAttachment({ filename: join(ATTACHMENTS, "a b/photo.heic") }),
     ]),
   );
   expect(message.attachments[0]?.url).toBe(
-    "/api/attachments?path=%2FUsers%2Fx%2FLibrary%2FMessages%2FAttachments%2Fa%20b%2Fphoto.heic",
+    "/api/attachments/messages/a%20b/photo.heic",
   );
   expect(message.attachments[0]?.mime_type).toBe("image/heic");
 });
@@ -55,16 +58,22 @@ test("toApiMessage prefers the converted file and mime when present", () => {
   const message = toApiMessage(
     makeMessage([
       makeAttachment({
-        converted_path:
-          "/Users/x/Library/Caches/imsg/converted-attachments/voice-abc.m4a",
+        converted_path: join(CONVERTED, "voice-abc.m4a"),
         converted_mime_type: "audio/mp4",
       }),
     ]),
   );
-  expect(message.attachments[0]?.url).toContain(
-    encodeURIComponent("converted-attachments/voice-abc.m4a"),
+  expect(message.attachments[0]?.url).toBe(
+    "/api/attachments/converted/voice-abc.m4a",
   );
   expect(message.attachments[0]?.mime_type).toBe("audio/mp4");
+});
+
+test("toApiMessage nulls the URL for files outside the stores", () => {
+  const message = toApiMessage(
+    makeMessage([makeAttachment({ filename: "/tmp/imsg/whatever.png" })]),
+  );
+  expect(message.attachments[0]?.url).toBeNull();
 });
 
 test("toApiChat falls back through name candidates for display_name", () => {

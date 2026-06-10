@@ -32,6 +32,24 @@ test("history responds oldest-first with a cursor that pages", async () => {
   expect(page2.messages.map((m) => m.text)).toEqual(["first"]);
 });
 
+test("attachment route matches nested store-relative paths", async () => {
+  // our handler responds (404 no-store for an absent file) — Hono's bare
+  // 404 would carry no cache-control, meaning :path{.+} didn't match
+  const res = await app.request(
+    "/api/attachments/messages/ab/cd/does-not-exist.heic",
+  );
+  expect(res.status).toBe(404);
+  expect(res.headers.get("cache-control")).toBe("no-store");
+
+  const traversal = await app.request(
+    "/api/attachments/messages/..%2F..%2F.ssh%2Fid_ed25519",
+  );
+  expect(traversal.status).toBe(404);
+
+  const badStore = await app.request("/api/attachments/etc/passwd");
+  expect(badStore.status).toBe(400);
+});
+
 test("events stream flushes immediately and forwards sends", async () => {
   const controller = new AbortController();
   const res = await app.request("/api/events", { signal: controller.signal });
