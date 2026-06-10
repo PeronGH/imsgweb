@@ -44,6 +44,17 @@ bun run lint         # eslint
 bun run format       # prettier
 ```
 
+To build a binary that bundles imsg itself (no separate install needed on
+the target machine), point `IMSGWEB_EMBED_IMSG` at the real imsg binary —
+not the homebrew shim:
+
+```bash
+IMSGWEB_EMBED_IMSG="$(brew --prefix imsg)/libexec/imsg" bun run build
+```
+
+An embedded build always uses its bundled imsg and refuses
+`IMSGWEB_RPC_CMD`.
+
 To develop without the imsg binary or Full Disk Access, point the server
 at the bundled mock (`--interval 4000` emits a synthetic incoming message
 every 4s):

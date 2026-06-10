@@ -57,6 +57,13 @@ All of check, lint, and format must pass before committing.
 - Production: `build.ts` uses the `Bun.build()` JS API with
   `compile: { outfile }` and the same plugins. A build script is required —
   the `bun build` CLI does not support plugins.
+- Optional imsg embedding: `IMSGWEB_EMBED_IMSG=<path to real imsg binary>`
+  makes build.ts tar the binary's directory (imsg needs its sibling
+  resource bundles) into `server/rpc/imsg.embedded`, which is bundled via
+  a `with { type: "file" }` import and restored to an EMPTY committed stub
+  after the build — never commit it non-empty. At runtime the archive is
+  extracted to a temp dir (`server/rpc/embedded.ts`); embedded builds
+  refuse IMSGWEB_RPC_CMD.
 
 ## Gotchas
 

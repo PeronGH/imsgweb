@@ -4,6 +4,7 @@
  * NDJSON JSON-RPC 2.0 over its stdio. `call()` is typed end-to-end via the
  * method map in ./types; `watch()` exposes subscriptions as async iterables.
  */
+import { embeddedImsgPath, hasEmbeddedImsg } from "./embedded";
 import type {
   ImsgMethod,
   ImsgRpcMethods,
@@ -89,7 +90,19 @@ type RpcProcess = ReturnType<typeof spawnRpcProcess>;
 /** Resolved at spawn time so IMSGWEB_RPC_CMD can be set after import. */
 function defaultCmd(): string[] {
   const override = process.env["IMSGWEB_RPC_CMD"]?.trim();
-  return override ? override.split(/\s+/) : ["imsg", "rpc"];
+  if (hasEmbeddedImsg()) {
+    if (override !== undefined && override !== "") {
+      // a build that bundles imsg pins the version on purpose — refusing
+      // beats silently ignoring one of the two
+      throw new Error(
+        "IMSGWEB_RPC_CMD conflicts with this build's embedded imsg",
+      );
+    }
+    const embedded = embeddedImsgPath();
+    if (embedded !== null) return [embedded, "rpc"];
+  }
+  if (override !== undefined && override !== "") return override.split(/\s+/);
+  return ["imsg", "rpc"];
 }
 
 /** The params argument is optional only when every param is optional. */
