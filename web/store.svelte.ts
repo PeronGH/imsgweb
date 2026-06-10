@@ -33,6 +33,9 @@ class Store {
   live = $state(false);
   /** On narrow screens the panes are exclusive: list or conversation. */
   sidebarOpen = $state(true);
+  /** Message to emphasize after a quote jump; MessageList scrolls to it. */
+  highlightedGuid = $state<string | null>(null);
+  #highlightTimer: ReturnType<typeof setTimeout> | null = null;
 
   selectedChat = $derived(
     this.chats.find((chat) => chat.id === this.selectedChatId),
@@ -61,6 +64,21 @@ class Store {
 
   toggleSidebar(): void {
     this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  /** Jump to a quoted message if it's in the loaded history. */
+  jumpToMessage(chatId: number, guid: string): void {
+    const loaded = (this.messages[chatId] ?? []).some((m) => m.guid === guid);
+    if (!loaded) {
+      toasts.info("That message isn't loaded yet — scroll up to load more");
+      return;
+    }
+    if (this.#highlightTimer !== null) clearTimeout(this.#highlightTimer);
+    this.highlightedGuid = guid;
+    this.#highlightTimer = setTimeout(() => {
+      this.highlightedGuid = null;
+      this.#highlightTimer = null;
+    }, 1600);
   }
 
   async select(chatId: number): Promise<void> {

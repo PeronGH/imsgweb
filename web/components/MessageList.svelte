@@ -32,6 +32,15 @@
     if (container && nearBottom) container.scrollTop = container.scrollHeight;
   });
 
+  // Scroll a quote-jump target into view once it's flagged.
+  $effect(() => {
+    const guid = store.highlightedGuid;
+    if (guid === null || !container) return;
+    container
+      .querySelector(`[data-guid="${CSS.escape(guid)}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  });
+
   // When the history is shorter than the viewport there are no scroll
   // events — keep paging until it overflows or the cursor is exhausted.
   $effect(() => {

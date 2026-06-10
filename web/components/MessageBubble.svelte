@@ -24,10 +24,16 @@
   const status = $derived(
     isLatestOwn ? store.sendStates[message.guid] : undefined,
   );
+  const highlighted = $derived(store.highlightedGuid === message.guid);
+  // the quoted text was resolved preferring the thread originator
+  const quotedGuid = $derived(
+    message.thread_originator_guid ?? message.reply_to_guid,
+  );
 </script>
 
 <div
   class={`mb-1 flex ${message.is_from_me ? "justify-end" : "justify-start"}`}
+  data-guid={message.guid}
 >
   <div class="max-w-[70%]">
     {#if isGroup && !message.is_from_me}
@@ -36,23 +42,26 @@
       </div>
     {/if}
     <div
-      class={`rounded-2xl px-3 py-1.5 ${
+      class={`rounded-2xl px-3 py-1.5 transition-shadow duration-500 ${
         message.is_from_me
           ? "bg-blue-500 text-white"
           : "bg-gray-200 text-gray-900"
-      }`}
+      } ${highlighted ? "ring-2 ring-amber-400" : ""}`}
       title={bubbleTime(message.created_at)}
     >
-      {#if message.reply_to_text}
-        <div
-          class={`mb-1 border-l-2 pl-2 text-xs ${
+      {#if message.reply_to_text && quotedGuid}
+        <button
+          type="button"
+          title="Jump to the quoted message"
+          onclick={() => store.jumpToMessage(message.chat_id, quotedGuid)}
+          class={`mb-1 block w-full cursor-pointer border-l-2 pl-2 text-left text-xs ${
             message.is_from_me
               ? "border-blue-200 text-blue-100"
               : "border-gray-400 text-gray-500"
           }`}
         >
           {message.reply_to_text}
-        </div>
+        </button>
       {/if}
       {#each message.attachments as attachment (attachment.url)}
         {#if attachment.missing || !attachment.url}
