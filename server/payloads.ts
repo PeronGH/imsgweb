@@ -45,7 +45,7 @@ function chatDisplayName(chat: ChatPayload): string {
 }
 
 export function toApiMessage(message: MessagePayload): ApiMessage {
-  return {
+  const apiMessage: ApiMessage = {
     ...message,
     attachments: message.attachments.map((attachment) => ({
       url: attachmentUrl(attachment.converted_path ?? attachment.filename),
@@ -56,6 +56,15 @@ export function toApiMessage(message: MessagePayload): ApiMessage {
       missing: attachment.missing,
     })),
   };
+  // chat.db sets reply_to_guid on ordinary consecutive messages too (it's
+  // Apple's send/sequence linkage) — only thread_originator_guid marks a
+  // real inline reply. Without it, the joined quote misleads; drop it.
+  if (apiMessage.thread_originator_guid === undefined) {
+    delete apiMessage.reply_to_guid;
+    delete apiMessage.reply_to_text;
+    delete apiMessage.reply_to_sender;
+  }
+  return apiMessage;
 }
 
 export function toApiChat(

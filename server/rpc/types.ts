@@ -233,7 +233,11 @@ export interface MessagePayload {
   /** history: always aggregated; watch: only with include_reactions. */
   reactions: ReactionPayload[];
 
-  /* Reply / thread routing (omitted when not a reply). */
+  /* Reply / thread routing. CAUTION: chat.db populates reply_to_guid on
+   * ordinary consecutive messages too (Apple-internal send/sequence
+   * linkage, observed in real data) — it does NOT prove an inline reply.
+   * Only thread_originator_guid marks a genuine reply; reply_to_text /
+   * reply_to_sender are joined from whichever guid resolves. */
   reply_to_guid?: string;
   thread_originator_guid?: string;
   thread_originator_part?: string;

@@ -69,6 +69,29 @@ test("toApiMessage prefers the converted file and mime when present", () => {
   expect(message.attachments[0]?.mime_type).toBe("audio/mp4");
 });
 
+test("toApiMessage keeps reply quotes only for real inline replies", () => {
+  // chat.db links consecutive messages via reply_to_guid without any user
+  // reply — real data showed quotes on non-replies (no thread originator)
+  const falseReply = toApiMessage({
+    ...makeMessage([]),
+    reply_to_guid: "G-PREV",
+    reply_to_text: "previous message",
+    reply_to_sender: "+15551234567",
+  });
+  expect(falseReply.reply_to_guid).toBeUndefined();
+  expect(falseReply.reply_to_text).toBeUndefined();
+  expect(falseReply.reply_to_sender).toBeUndefined();
+
+  const realReply = toApiMessage({
+    ...makeMessage([]),
+    reply_to_guid: "G-PREV",
+    thread_originator_guid: "G-PREV",
+    reply_to_text: "previous message",
+    reply_to_sender: "+15551234567",
+  });
+  expect(realReply.reply_to_text).toBe("previous message");
+});
+
 test("toApiMessage nulls the URL for files outside the stores", () => {
   const message = toApiMessage(
     makeMessage([makeAttachment({ filename: "/tmp/imsg/whatever.png" })]),
