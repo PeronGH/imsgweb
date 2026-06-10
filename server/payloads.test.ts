@@ -127,6 +127,35 @@ test("toApiChat falls back through name candidates for display_name", () => {
   ).toBe("a@b.c, d@e.f");
 });
 
+test("preview text labels placeholder-only messages", () => {
+  const chat: ChatPayload = {
+    id: 9,
+    identifier: "+15551234567",
+    guid: "iMessage;-;+15551234567",
+    name: "Ada",
+    service: "iMessage",
+    last_message_at: "2026-06-10T00:00:00.000Z",
+    participants: ["+15551234567"],
+    is_group: false,
+  };
+  // attachment-only message: text is the U+FFFC placeholder (truthy!)
+  const image = { ...makeMessage([makeAttachment({})]), text: "￼" };
+  expect(toApiChat(chat, image).last_message?.text).toBe("Image");
+  // placeholder text but attachments not fetched
+  const bare = { ...makeMessage([]), text: "￼" };
+  expect(toApiChat(chat, bare).last_message?.text).toBe("Attachment");
+});
+
+test("toApiMessage labels attachment-only reply quotes", () => {
+  const reply = toApiMessage({
+    ...makeMessage([]),
+    thread_originator_guid: "G-PARENT",
+    reply_to_guid: "G-PARENT",
+    reply_to_text: "￼",
+  });
+  expect(reply.reply_to_text).toBe("Attachment");
+});
+
 test("toApiChat merges a preview and maps absence to null", () => {
   const chat: ChatPayload = {
     id: 2,

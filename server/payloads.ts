@@ -3,6 +3,7 @@
  * consumes. Shared by the history, chats, and SSE routes.
  */
 import { attachmentUrl } from "./attachments";
+import { cleanText, previewText } from "./preview";
 import type { ChatPayload, MessagePayload } from "./rpc";
 
 export interface ApiAttachment {
@@ -63,6 +64,10 @@ export function toApiMessage(message: MessagePayload): ApiMessage {
     delete apiMessage.reply_to_guid;
     delete apiMessage.reply_to_text;
     delete apiMessage.reply_to_sender;
+  } else if (apiMessage.reply_to_text !== undefined) {
+    // quoted parents can be attachment-only (placeholder-only text)
+    const quote = cleanText(apiMessage.reply_to_text);
+    apiMessage.reply_to_text = quote === "" ? "Attachment" : quote;
   }
   return apiMessage;
 }
@@ -76,7 +81,7 @@ export function toApiChat(
     display_name: chatDisplayName(chat),
     last_message: lastMessage
       ? {
-          text: lastMessage.text,
+          text: previewText(lastMessage),
           sender_name: lastMessage.sender_name,
           is_from_me: lastMessage.is_from_me,
           created_at: lastMessage.created_at,

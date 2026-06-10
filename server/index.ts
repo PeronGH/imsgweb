@@ -53,7 +53,13 @@ const app = new Hono()
       const { chats } = await rpc.call("chats.list", { limit });
       const previews = await Promise.all(
         chats.map((chat) =>
-          rpc.call("messages.history", { chat_id: chat.id, limit: 1 }),
+          // attachments give the preview a label when the text is
+          // placeholder-only ("Image", "Sticker", …)
+          rpc.call("messages.history", {
+            chat_id: chat.id,
+            limit: 1,
+            attachments: true,
+          }),
         ),
       );
       return c.json({

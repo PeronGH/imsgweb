@@ -29,8 +29,7 @@
       </span>
       {#if chat.last_message}
         <span class="truncate text-sm text-gray-500">
-          {chat.last_message.is_from_me ? "You: " : ""}{chat.last_message
-            .text || "(attachment)"}
+          {chat.last_message.is_from_me ? "You: " : ""}{chat.last_message.text}
         </span>
       {/if}
     </button>

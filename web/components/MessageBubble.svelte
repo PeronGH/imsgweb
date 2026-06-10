@@ -6,6 +6,7 @@
   import FileDown from "@lucide/svelte/icons/file-down";
   import ImageOff from "@lucide/svelte/icons/image-off";
   import type { ApiMessage } from "../../server/payloads";
+  import { cleanText } from "../../server/preview";
   import { bubbleTime } from "../format";
   import { store } from "../store.svelte";
 
@@ -19,10 +20,7 @@
     isLatestOwn?: boolean;
   } = $props();
 
-  // strip attachment (U+FFFC) and app-balloon (U+FFFD) placeholders
-  const text = $derived(
-    message.text.replaceAll("￼", "").replaceAll("�", "").trim(),
-  );
+  const text = $derived(cleanText(message.text));
   const status = $derived(
     isLatestOwn ? store.sendStates[message.guid] : undefined,
   );

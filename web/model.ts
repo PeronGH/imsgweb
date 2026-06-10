@@ -5,6 +5,7 @@
  * can be re-emitted (upsert, never append blindly), and reaction events are
  * standalone rows that reference their target by reacted_to_guid.
  */
+import { previewText } from "../server/preview";
 import type { ApiChat, ApiMessage } from "../server/payloads";
 
 /** Insert or replace by id, keeping the list sorted by id (oldest first). */
@@ -87,7 +88,7 @@ export function bumpChat(
     ...chat,
     last_message_at: message.created_at,
     last_message: {
-      text: message.text,
+      text: previewText(message),
       sender_name: message.sender_name,
       is_from_me: message.is_from_me,
       created_at: message.created_at,
