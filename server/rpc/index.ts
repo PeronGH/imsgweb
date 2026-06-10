@@ -277,5 +277,10 @@ export class RpcClient {
   }
 }
 
-/** Shared client for the app — lazily spawns `imsg rpc` on first use. */
-export const rpc = new RpcClient();
+/**
+ * Shared client for the app — lazily spawns `imsg rpc` (from PATH) on first
+ * use. Set IMSGWEB_RPC_CMD to override the command (split on spaces), e.g.
+ * IMSGWEB_RPC_CMD="bun server/rpc/mock.ts" to run against the fixture mock
+ * without the imsg binary or Full Disk Access.
+ */
+export const rpc = new RpcClient(process.env["IMSGWEB_RPC_CMD"]?.split(" "));

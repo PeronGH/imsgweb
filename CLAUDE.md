@@ -7,6 +7,9 @@ No Vite, no Node.js — Bun bundles everything, including the frontend.
 ## Commands
 
 - `bun run dev` — dev server with HMR on http://localhost:3000
+- `IMSGWEB_RPC_CMD="bun server/rpc/mock.ts" bun run dev` — dev against the
+  fixture mock (no imsg binary / Full Disk Access needed); add
+  `--interval 3000` to the cmd for synthetic incoming messages
 - `bun run build` — standalone binary at `dist/imsgweb`
 - `bun run check` — svelte-check (type-checks `.ts` and `.svelte`)
 - `bun run lint` / `bun run format` — ESLint / Prettier

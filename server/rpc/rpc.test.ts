@@ -1,48 +1,15 @@
 import { expect, test } from "bun:test";
+import { join } from "node:path";
 import { RpcClient, RpcError } from "./index";
 
-// Stands in for `imsg rpc`: NDJSON in, NDJSON out, exits when stdin closes.
-// `send` exits without responding; watch.subscribe pushes its notifications
-// in the same write batch as the response to exercise demux ordering, and
-// kills the subscription when asked to watch chat_id 999.
-const MOCK_SOURCE = `
-const respond = (obj) => console.log(JSON.stringify(obj));
-let buf = "";
-process.stdin.on("data", (chunk) => {
-  buf += chunk.toString();
-  let newline;
-  while ((newline = buf.indexOf("\\n")) !== -1) {
-    const line = buf.slice(0, newline).trim();
-    buf = buf.slice(newline + 1);
-    if (!line) continue;
-    const { id, method, params = {} } = JSON.parse(line);
-    if (method === "chats.list") {
-      respond({ jsonrpc: "2.0", id, result: { chats: [{ id: 1, identifier: "+15551234567", guid: "iMessage;-;+15551234567", name: "Ada", service: "iMessage", last_message_at: "2026-06-10T00:00:00.000Z", participants: ["+15551234567"], is_group: false }] } });
-    } else if (method === "messages.history") {
-      respond({ jsonrpc: "2.0", id, error: { code: -32602, message: "Invalid params", data: "unknown chat_id" } });
-    } else if (method === "watch.subscribe") {
-      respond({ jsonrpc: "2.0", id, result: { subscription: 7 } });
-      respond({ jsonrpc: "2.0", method: "message", params: { subscription: 7, message: { id: 101, text: "first" } } });
-      respond({ jsonrpc: "2.0", method: "message", params: { subscription: 7, message: { id: 102, text: "second" } } });
-      if (params.chat_id === 999) {
-        respond({ jsonrpc: "2.0", method: "error", params: { subscription: 7, error: { message: "stream died" } } });
-      }
-    } else if (method === "watch.unsubscribe") {
-      respond({ jsonrpc: "2.0", id, result: { ok: true } });
-    } else if (method === "send") {
-      process.exit(3);
-    }
-  }
-});
-process.stdin.on("end", () => process.exit(0));
-`;
-const MOCK_CMD = ["bun", "-e", MOCK_SOURCE];
+// The centralized imsg stand-in; see mock.ts for fixtures and triggers.
+const MOCK_CMD = ["bun", join(import.meta.dir, "mock.ts")];
 
 test("call resolves with the typed result", async () => {
   const client = new RpcClient(MOCK_CMD);
   const { chats } = await client.call("chats.list");
-  expect(chats).toHaveLength(1);
-  expect(chats[0]?.name).toBe("Ada");
+  expect(chats.length).toBeGreaterThanOrEqual(3);
+  expect(chats.map((chat) => chat.name)).toContain("Ada");
   await client.stop();
 });
 
@@ -61,10 +28,10 @@ test("error responses reject with RpcError", async () => {
   await client.stop();
 });
 
-test("watch yields pushed messages and unsubscribes on break", async () => {
+test("watch replays from since_rowid and unsubscribes on break", async () => {
   const client = new RpcClient(MOCK_CMD);
-  const watch = await client.watch();
-  expect(watch.subscription).toBe(7);
+  const watch = await client.watch({ chat_id: 1, since_rowid: 0 });
+  expect(watch.subscription).toBe(1);
   const texts: string[] = [];
   for await (const message of watch) {
     texts.push(message.text);
@@ -76,7 +43,7 @@ test("watch yields pushed messages and unsubscribes on break", async () => {
 
 test("watch throws when the subscription dies server-side", async () => {
   const client = new RpcClient(MOCK_CMD);
-  const watch = await client.watch({ chat_id: 999 });
+  const watch = await client.watch({ chat_id: 999, since_rowid: 0 });
   const texts: string[] = [];
   let failure: Error | null = null;
   try {
@@ -84,21 +51,39 @@ test("watch throws when the subscription dies server-side", async () => {
   } catch (e) {
     failure = e as Error;
   }
-  expect(texts).toEqual(["first", "second"]);
+  expect(texts).toEqual(["doomed one", "doomed two"]);
   expect(failure?.message).toBe("stream died");
+  await client.stop();
+});
+
+test("sends echo to live watches and report delivered status", async () => {
+  const client = new RpcClient(MOCK_CMD);
+  const watch = await client.watch({ chat_id: 1 });
+  const result = await client.call("send", { chat_id: 1, text: "hi" });
+  expect(result.ok).toBe(true);
+  for await (const message of watch) {
+    expect(message.text).toBe("hi");
+    expect(message.is_from_me).toBe(true);
+    expect(message.guid).toBe(result.guid ?? "");
+    break;
+  }
+  const status = await client.call("message.send_status", {
+    guid: result.guid ?? "",
+  });
+  expect(status.send_state).toBe("delivered");
   await client.stop();
 });
 
 test("in-flight calls reject when the process exits", async () => {
   const client = new RpcClient(MOCK_CMD);
   await expect(
-    client.call("send", { to: "+15551234567", text: "hi" }),
+    client.call("send", { to: "+15551234567", text: "__crash__" }),
   ).rejects.toThrow(/exited with code 3/);
 });
 
 test("stop ends open watches cleanly", async () => {
   const client = new RpcClient(MOCK_CMD);
-  const watch = await client.watch();
+  const watch = await client.watch({ chat_id: 1, since_rowid: 0 });
   const consumed = (async () => {
     const texts: string[] = [];
     for await (const message of watch) texts.push(message.text);
