@@ -67,6 +67,34 @@ test("toApiMessage prefers the converted file and mime when present", () => {
   expect(message.attachments[0]?.mime_type).toBe("audio/mp4");
 });
 
+test("toApiChat falls back through name candidates for display_name", () => {
+  const base: ChatPayload = {
+    id: 3,
+    identifier: "+15558675309",
+    guid: "iMessage;-;+15558675309",
+    name: "",
+    service: "iMessage",
+    last_message_at: "2026-06-10T00:00:00.000Z",
+    participants: ["+15558675309"],
+    is_group: false,
+  };
+  // chat.db stores display_name as "" for 1:1 chats; unresolved contacts
+  // must still get a usable title
+  expect(toApiChat(base, undefined).display_name).toBe("+15558675309");
+  expect(
+    toApiChat({ ...base, contact_name: "Jenny" }, undefined).display_name,
+  ).toBe("Jenny");
+  expect(toApiChat({ ...base, name: "Named" }, undefined).display_name).toBe(
+    "Named",
+  );
+  expect(
+    toApiChat(
+      { ...base, identifier: "", participants: ["a@b.c", "d@e.f"] },
+      undefined,
+    ).display_name,
+  ).toBe("a@b.c, d@e.f");
+});
+
 test("toApiChat merges a preview and maps absence to null", () => {
   const chat: ChatPayload = {
     id: 2,

@@ -35,6 +35,7 @@ function makeChat(id: number, lastMessageAt: string): ApiChat {
     last_message_at: lastMessageAt,
     participants: [],
     is_group: false,
+    display_name: `Chat ${id}`,
     last_message: null,
   };
 }

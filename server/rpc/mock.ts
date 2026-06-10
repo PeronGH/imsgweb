@@ -74,6 +74,18 @@ const chats: ChatPayload[] = [
     is_group: true,
   },
   {
+    // a 1:1 chat whose display_name is "" in chat.db and whose handle the
+    // contact resolver can't match — name arrives empty (real imsg behavior)
+    id: 3,
+    identifier: "+15558675309",
+    guid: "iMessage;-;+15558675309",
+    name: "",
+    service: "iMessage",
+    last_message_at: "2026-06-10T00:00:04.000Z",
+    participants: ["+15558675309"],
+    is_group: false,
+  },
+  {
     id: DOOMED_CHAT_ID,
     identifier: "+15550009999",
     guid: "iMessage;-;+15550009999",

@@ -14,7 +14,7 @@
     >
       <span class="flex items-baseline justify-between gap-2">
         <span class="truncate font-medium">
-          {chat.contact_name ?? chat.name}
+          {chat.display_name}
           {#if chat.is_group}
             <span
               class="ml-1 rounded bg-gray-200 px-1 text-[10px] uppercase text-gray-600"

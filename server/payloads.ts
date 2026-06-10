@@ -26,7 +26,21 @@ export interface ChatLastMessage {
   created_at: string;
 }
 
-export type ApiChat = ChatPayload & { last_message: ChatLastMessage | null };
+export type ApiChat = ChatPayload & {
+  /** Never empty — render this, not name/contact_name. */
+  display_name: string;
+  last_message: ChatLastMessage | null;
+};
+
+/** imsg's `name` can be "" for 1:1 chats: chat.db stores display_name as an
+ *  empty string (not NULL), and the contact resolver only matches contacts
+ *  it can see. Fall through to the raw handle(s). */
+function chatDisplayName(chat: ChatPayload): string {
+  for (const candidate of [chat.contact_name, chat.name, chat.identifier]) {
+    if (candidate !== undefined && candidate.trim() !== "") return candidate;
+  }
+  return chat.participants.join(", ") || "Unknown";
+}
 
 export function toApiMessage(message: MessagePayload): ApiMessage {
   return {
@@ -50,6 +64,7 @@ export function toApiChat(
 ): ApiChat {
   return {
     ...chat,
+    display_name: chatDisplayName(chat),
     last_message: lastMessage
       ? {
           text: lastMessage.text,
