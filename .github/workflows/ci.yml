@@ -9,17 +9,13 @@ concurrency:
   group: ci-release
   cancel-in-progress: false
 
-permissions:
-  contents: write
-
 jobs:
-  release:
+  build:
     runs-on: macos-26
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
-        with:
-          # all refs, so existing v* tags are visible for the increment
-          fetch-depth: 0
 
       - uses: oven-sh/setup-bun@v2
 
@@ -34,6 +30,30 @@ jobs:
 
       - name: Build with embedded imsg
         run: IMSGWEB_EMBED_IMSG="$(brew --prefix imsg)/libexec/imsg" bun run build
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: imsgweb
+          path: dist/imsgweb
+          if-no-files-found: error
+
+  # releasing runs on ubuntu: the macos-26 beta image showed intermittent
+  # 401s from gh against api.github.com (runs 27288482151 / 27288573488)
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # all refs, so existing v* tags are visible for the increment
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: imsgweb
+          path: dist
 
       - name: Tag and release
         env:
