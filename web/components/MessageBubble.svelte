@@ -115,7 +115,11 @@
     {/if}
     {#if status}
       <div class="mt-0.5 flex justify-end text-gray-400">
-        {#if status === "delivered"}
+        {#if status === "read"}
+          <span class="text-blue-500" title="Read"
+            ><CheckCheck size={14} /></span
+          >
+        {:else if status === "delivered"}
           <span title="Delivered"><CheckCheck size={14} /></span>
         {:else if status === "sent"}
           <span title="Sent"><Check size={14} /></span>

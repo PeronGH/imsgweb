@@ -19,7 +19,7 @@ async function errorDetail(res: Response, fallback: string): Promise<string> {
   return `${fallback} (${res.status})`;
 }
 
-export type SendState = "pending" | "sent" | "delivered" | "failed";
+export type SendState = "pending" | "sent" | "delivered" | "read" | "failed";
 
 class Store {
   chats = $state<ApiChat[]>([]);
@@ -143,14 +143,26 @@ class Store {
 
   async trackSendStatus(guid: string): Promise<void> {
     this.sendStates[guid] = "pending";
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const res = await api.messages[":guid"].status.$get({ param: { guid } });
-      if (res.ok) {
-        const { send_state } = await res.json();
-        this.sendStates[guid] = send_state;
-        if (send_state === "delivered" || send_state === "failed") return;
+    // delivery lands in seconds; the read receipt can trail by a while —
+    // poll fast first, then slowly, for ~90s total
+    for (let attempt = 0; attempt < 20; attempt++) {
+      try {
+        const res = await api.messages[":guid"].status.$get({
+          param: { guid },
+        });
+        if (res.ok) {
+          const { send_state, status_fields } = await res.json();
+          const state: SendState =
+            status_fields?.date_read != null ? "read" : send_state;
+          this.sendStates[guid] = state;
+          if (state === "read" || state === "failed") return;
+        }
+      } catch {
+        // transient — retry on the next tick
       }
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await new Promise((resolve) =>
+        setTimeout(resolve, attempt < 5 ? 1500 : 5000),
+      );
     }
   }
 
