@@ -6,6 +6,7 @@
   import WifiOff from "@lucide/svelte/icons/wifi-off";
   import ChatList from "./components/ChatList.svelte";
   import Conversation from "./components/Conversation.svelte";
+  import Toasts from "./components/Toasts.svelte";
   import { store } from "./store.svelte";
 
   void store.start();
@@ -66,4 +67,5 @@
       </div>
     {/if}
   </section>
+  <Toasts />
 </div>

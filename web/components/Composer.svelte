@@ -43,9 +43,6 @@
 </script>
 
 <footer class="border-t border-gray-200 px-4 py-3">
-  {#if store.error}
-    <p class="mb-2 text-sm text-red-600">{store.error}</p>
-  {/if}
   {#if file}
     <p class="mb-2 flex items-center gap-1.5 text-xs text-gray-500">
       <Paperclip size={12} />

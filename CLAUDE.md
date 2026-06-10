@@ -45,7 +45,8 @@ All of check, lint, and format must pass before committing.
   (presentational). Frontend types come from `server/payloads.ts`.
   Icons: `@lucide/svelte`, imported per-icon
   (`import X from "@lucide/svelte/icons/x"` — never the barrel). Icon-only
-  controls need `aria-label`/`title`.
+  controls need `aria-label`/`title`. Surface user-facing errors via
+  `toasts.error(...)` from `web/toast.svelte.ts`, not inline UI.
 - `web/app.css` — `@import "tailwindcss"` (Tailwind v4, no config file).
 
 ## Build pipeline

@@ -5,7 +5,19 @@
 import { api } from "./api";
 import { connectEvents } from "./events";
 import { applyReactionEvent, bumpChat, upsertMessage } from "./model";
+import { toasts } from "./toast.svelte";
 import type { ApiChat, ApiMessage } from "../server/payloads";
+
+/** Extract the API's { error } body, falling back to the HTTP status. */
+async function errorDetail(res: Response, fallback: string): Promise<string> {
+  try {
+    const parsed = (await res.json()) as { error?: string };
+    if (parsed.error !== undefined) return parsed.error;
+  } catch {
+    // not a JSON body
+  }
+  return `${fallback} (${res.status})`;
+}
 
 export type SendState = "pending" | "sent" | "delivered" | "failed";
 
@@ -19,7 +31,6 @@ class Store {
   /** Delivery state by message guid, for the status tick. */
   sendStates = $state<Record<string, SendState>>({});
   live = $state(false);
-  error = $state<string | null>(null);
   /** On narrow screens the panes are exclusive: list or conversation. */
   sidebarOpen = $state(true);
 
@@ -36,8 +47,16 @@ class Store {
   }
 
   async loadChats(): Promise<void> {
-    const res = await api.chats.$get({ query: {} });
-    if (res.ok) this.chats = (await res.json()).chats;
+    try {
+      const res = await api.chats.$get({ query: {} });
+      if (!res.ok) {
+        toasts.error(await errorDetail(res, "Failed to load chats"));
+        return;
+      }
+      this.chats = (await res.json()).chats;
+    } catch {
+      toasts.error("Failed to load chats — is the server running?");
+    }
   }
 
   toggleSidebar(): void {
@@ -59,16 +78,23 @@ class Store {
   }
 
   async loadHistory(chatId: number, before?: string): Promise<void> {
-    const res = await api.chats[":chatId"].messages.$get({
-      param: { chatId: String(chatId) },
-      query: before === undefined ? {} : { before },
-    });
-    if (!res.ok) return;
-    const { messages, next_before } = await res.json();
-    let merged = this.messages[chatId] ?? [];
-    for (const message of messages) merged = upsertMessage(merged, message);
-    this.messages[chatId] = merged;
-    this.cursors[chatId] = next_before;
+    try {
+      const res = await api.chats[":chatId"].messages.$get({
+        param: { chatId: String(chatId) },
+        query: before === undefined ? {} : { before },
+      });
+      if (!res.ok) {
+        toasts.error(await errorDetail(res, "Failed to load messages"));
+        return;
+      }
+      const { messages, next_before } = await res.json();
+      let merged = this.messages[chatId] ?? [];
+      for (const message of messages) merged = upsertMessage(merged, message);
+      this.messages[chatId] = merged;
+      this.cursors[chatId] = next_before;
+    } catch {
+      toasts.error("Failed to load messages");
+    }
   }
 
   /** Send to the selected chat. The bubble itself arrives via the SSE echo
@@ -76,29 +102,25 @@ class Store {
   async send(input: { text?: string; file?: File }): Promise<boolean> {
     const chat = this.selectedChat;
     if (!chat) return false;
-    this.error = null;
-    const res = await api.messages.$post({
-      form: {
-        chat_id: String(chat.id),
-        ...(input.text !== undefined ? { text: input.text } : {}),
-        ...(input.file !== undefined ? { file: input.file } : {}),
-      },
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      let detail = `send failed (${res.status})`;
-      try {
-        const parsed = JSON.parse(body) as { error?: string };
-        if (parsed.error !== undefined) detail = parsed.error;
-      } catch {
-        // keep the generic message
+    try {
+      const res = await api.messages.$post({
+        form: {
+          chat_id: String(chat.id),
+          ...(input.text !== undefined ? { text: input.text } : {}),
+          ...(input.file !== undefined ? { file: input.file } : {}),
+        },
+      });
+      if (!res.ok) {
+        toasts.error(await errorDetail(res, "Send failed"));
+        return false;
       }
-      this.error = detail;
+      const result = await res.json();
+      if (result.guid !== undefined) void this.trackSendStatus(result.guid);
+      return true;
+    } catch {
+      toasts.error("Send failed");
       return false;
     }
-    const result = await res.json();
-    if (result.guid !== undefined) void this.trackSendStatus(result.guid);
-    return true;
   }
 
   async trackSendStatus(guid: string): Promise<void> {
