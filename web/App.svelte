@@ -2,9 +2,11 @@
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
   import PanelLeftClose from "@lucide/svelte/icons/panel-left-close";
   import PanelLeftOpen from "@lucide/svelte/icons/panel-left-open";
+  import SquarePen from "@lucide/svelte/icons/square-pen";
   import Wifi from "@lucide/svelte/icons/wifi";
   import WifiOff from "@lucide/svelte/icons/wifi-off";
   import ChatList from "./components/ChatList.svelte";
+  import ComposeNew from "./components/ComposeNew.svelte";
   import Conversation from "./components/Conversation.svelte";
   import Toasts from "./components/Toasts.svelte";
   import { store } from "./store.svelte";
@@ -28,16 +30,27 @@
       >
         <PanelLeftClose size={18} />
       </button>
-      <span
-        class={store.live ? "text-green-500" : "text-gray-400"}
-        title={store.live ? "Live" : "Connecting…"}
-      >
-        {#if store.live}
-          <Wifi size={16} />
-        {:else}
-          <WifiOff size={16} />
-        {/if}
-        <span class="sr-only">{store.live ? "live" : "connecting"}</span>
+      <span class="flex items-center gap-1">
+        <span
+          class={store.live ? "text-green-500" : "text-gray-400"}
+          title={store.live ? "Live" : "Connecting…"}
+        >
+          {#if store.live}
+            <Wifi size={16} />
+          {:else}
+            <WifiOff size={16} />
+          {/if}
+          <span class="sr-only">{store.live ? "live" : "connecting"}</span>
+        </span>
+        <button
+          type="button"
+          onclick={() => store.startCompose()}
+          aria-label="New message"
+          title="New message"
+          class="rounded p-1 text-gray-500 hover:bg-gray-100"
+        >
+          <SquarePen size={18} />
+        </button>
       </span>
     </header>
     <ChatList />
@@ -45,7 +58,9 @@
   <section
     class={`${store.sidebarOpen ? "hidden md:flex" : "flex"} min-w-0 flex-1 flex-col`}
   >
-    {#if store.selectedChat}
+    {#if store.composing}
+      <ComposeNew />
+    {:else if store.selectedChat}
       <Conversation chat={store.selectedChat} />
     {:else}
       <div

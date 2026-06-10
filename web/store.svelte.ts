@@ -36,6 +36,8 @@ class Store {
   /** Message to emphasize after a quote jump; MessageList scrolls to it. */
   highlightedGuid = $state<string | null>(null);
   #highlightTimer: ReturnType<typeof setTimeout> | null = null;
+  /** New-conversation pane open (direct send to a fresh handle). */
+  composing = $state(false);
 
   selectedChat = $derived(
     this.chats.find((chat) => chat.id === this.selectedChatId),
@@ -81,7 +83,47 @@ class Store {
     }, 1600);
   }
 
+  startCompose(): void {
+    this.composing = true;
+    this.selectedChatId = null;
+    if (!window.matchMedia("(min-width: 768px)").matches) {
+      this.sidebarOpen = false;
+    }
+  }
+
+  cancelCompose(): void {
+    this.composing = false;
+  }
+
+  /** Send to a raw handle; Messages creates the 1:1 chat implicitly. */
+  async compose(to: string, text: string): Promise<boolean> {
+    try {
+      const res = await api.messages.$post({ form: { to, text } });
+      if (!res.ok) {
+        toasts.error(await errorDetail(res, "Send failed"));
+        return false;
+      }
+      const result = await res.json();
+      if (result.guid !== undefined) void this.trackSendStatus(result.guid);
+      this.composing = false;
+      // the send created (or reused) a chat — find and open it
+      await this.loadChats();
+      const chat =
+        this.chats.find(
+          (c) => result.chat_guid !== undefined && c.guid === result.chat_guid,
+        ) ??
+        this.chats.find((c) => c.identifier === to) ??
+        this.chats[0];
+      if (chat) await this.select(chat.id);
+      return true;
+    } catch {
+      toasts.error("Send failed");
+      return false;
+    }
+  }
+
   async select(chatId: number): Promise<void> {
+    this.composing = false;
     this.selectedChatId = chatId;
     // narrow screens show one pane at a time — switch to the conversation
     if (!window.matchMedia("(min-width: 768px)").matches) {
