@@ -10,6 +10,10 @@
   let fileInput = $state<HTMLInputElement | null>(null);
 
   const canSend = $derived(!sending && (text.trim() !== "" || file !== null));
+  const isSms = $derived(
+    store.selectedChat !== undefined &&
+      store.selectedChat.service.toLowerCase() !== "imessage",
+  );
 
   async function submit() {
     if (!canSend) return;
@@ -85,7 +89,7 @@
       bind:value={text}
       onkeydown={onKeydown}
       rows="1"
-      placeholder="iMessage"
+      placeholder={isSms ? "Text Message" : "iMessage"}
       disabled={sending}
       class="max-h-32 flex-1 resize-none rounded-2xl border border-gray-300 px-3 py-1.5 text-[15px] focus:border-blue-400 focus:outline-none"
     ></textarea>
@@ -94,7 +98,7 @@
       disabled={!canSend}
       aria-label="Send"
       title="Send"
-      class="rounded-full bg-blue-500 p-2 text-white disabled:opacity-40"
+      class={`rounded-full p-2 text-white disabled:opacity-40 ${isSms ? "bg-green-500" : "bg-blue-500"}`}
     >
       <ArrowUp size={18} />
     </button>

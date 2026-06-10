@@ -30,6 +30,10 @@
   </div>
 </header>
 {#key chat.id}
-  <MessageList chatId={chat.id} isGroup={chat.is_group} />
+  <MessageList
+    chatId={chat.id}
+    isGroup={chat.is_group}
+    isSms={chat.service.toLowerCase() !== "imessage"}
+  />
 {/key}
 <Composer />

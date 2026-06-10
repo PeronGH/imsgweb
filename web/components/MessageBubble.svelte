@@ -14,10 +14,12 @@
   const {
     message,
     isGroup,
+    isSms,
     isLatestOwn = false,
   }: {
     message: ApiMessage;
     isGroup: boolean;
+    isSms: boolean;
     isLatestOwn?: boolean;
   } = $props();
 
@@ -50,7 +52,7 @@
     <div
       class={`rounded-2xl px-3 py-1.5 transition-shadow duration-500 ${
         message.is_from_me
-          ? "bg-blue-500 text-white"
+          ? `${isSms ? "bg-green-500" : "bg-blue-500"} text-white`
           : "bg-gray-200 text-gray-900"
       } ${highlighted ? "ring-2 ring-amber-400" : ""}`}
       title={bubbleTime(message.created_at)}
@@ -62,7 +64,7 @@
           onclick={() => store.jumpToMessage(message.chat_id, quotedGuid)}
           class={`mb-1 block w-full cursor-pointer border-l-2 pl-2 text-left text-xs ${
             message.is_from_me
-              ? "border-blue-200 text-blue-100"
+              ? "border-white/50 text-white/80"
               : "border-gray-400 text-gray-500"
           }`}
         >

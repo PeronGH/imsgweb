@@ -5,7 +5,11 @@
   import { store } from "../store.svelte";
   import MessageBubble from "./MessageBubble.svelte";
 
-  const { chatId, isGroup }: { chatId: number; isGroup: boolean } = $props();
+  const {
+    chatId,
+    isGroup,
+    isSms,
+  }: { chatId: number; isGroup: boolean; isSms: boolean } = $props();
 
   const messages = $derived(store.messages[chatId] ?? []);
   const cursor = $derived(store.cursors[chatId]);
@@ -91,6 +95,7 @@
     <MessageBubble
       {message}
       {isGroup}
+      {isSms}
       isLatestOwn={message.id === latestOwnId}
     />
   {/each}
