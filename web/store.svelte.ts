@@ -20,6 +20,8 @@ class Store {
   sendStates = $state<Record<string, SendState>>({});
   live = $state(false);
   error = $state<string | null>(null);
+  /** On narrow screens the panes are exclusive: list or conversation. */
+  sidebarOpen = $state(true);
 
   selectedChat = $derived(
     this.chats.find((chat) => chat.id === this.selectedChatId),
@@ -38,8 +40,16 @@ class Store {
     if (res.ok) this.chats = (await res.json()).chats;
   }
 
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
   async select(chatId: number): Promise<void> {
     this.selectedChatId = chatId;
+    // narrow screens show one pane at a time — switch to the conversation
+    if (!window.matchMedia("(min-width: 768px)").matches) {
+      this.sidebarOpen = false;
+    }
     if (!(chatId in this.messages)) await this.loadHistory(chatId);
   }
 

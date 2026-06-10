@@ -1,5 +1,7 @@
 <script lang="ts">
   import MessagesSquare from "@lucide/svelte/icons/messages-square";
+  import PanelLeftClose from "@lucide/svelte/icons/panel-left-close";
+  import PanelLeftOpen from "@lucide/svelte/icons/panel-left-open";
   import Wifi from "@lucide/svelte/icons/wifi";
   import WifiOff from "@lucide/svelte/icons/wifi-off";
   import ChatList from "./components/ChatList.svelte";
@@ -10,11 +12,21 @@
 </script>
 
 <div class="flex h-screen bg-white text-gray-900">
-  <aside class="flex w-80 shrink-0 flex-col border-r border-gray-200">
+  <aside
+    class={`${store.sidebarOpen ? "flex" : "hidden"} w-full shrink-0 flex-col border-r border-gray-200 md:w-80`}
+  >
     <header
-      class="flex items-center justify-between border-b border-gray-200 px-4 py-3"
+      class="flex items-center justify-between border-b border-gray-200 px-3 py-3"
     >
-      <h1 class="text-lg font-semibold">imsgweb</h1>
+      <button
+        type="button"
+        onclick={() => store.toggleSidebar()}
+        aria-label="Hide chat list"
+        title="Hide chat list"
+        class="rounded p-1 text-gray-500 hover:bg-gray-100"
+      >
+        <PanelLeftClose size={18} />
+      </button>
       <span
         class={store.live ? "text-green-500" : "text-gray-400"}
         title={store.live ? "Live" : "Connecting…"}
@@ -29,13 +41,26 @@
     </header>
     <ChatList />
   </aside>
-  <section class="flex min-w-0 flex-1 flex-col">
+  <section
+    class={`${store.sidebarOpen ? "hidden md:flex" : "flex"} min-w-0 flex-1 flex-col`}
+  >
     {#if store.selectedChat}
       <Conversation chat={store.selectedChat} />
     {:else}
       <div
-        class="flex flex-1 flex-col items-center justify-center gap-3 text-gray-300"
+        class="relative flex flex-1 flex-col items-center justify-center gap-3 text-gray-300"
       >
+        {#if !store.sidebarOpen}
+          <button
+            type="button"
+            onclick={() => store.toggleSidebar()}
+            aria-label="Show chat list"
+            title="Show chat list"
+            class="absolute top-3 left-3 rounded p-1 text-gray-500 hover:bg-gray-100"
+          >
+            <PanelLeftOpen size={18} />
+          </button>
+        {/if}
         <MessagesSquare size={48} strokeWidth={1.25} />
         <p class="text-sm text-gray-400">Select a conversation</p>
       </div>
