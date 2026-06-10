@@ -1,0 +1,34 @@
+{
+  "name": "imsgweb",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "dev": "bun --hot index.ts",
+    "build": "bun run build.ts",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/bun": "latest",
+    "bun-plugin-svelte": "^0.0.6",
+    "eslint": "^10.4.1",
+    "eslint-plugin-svelte": "^3.19.0",
+    "globals": "^17.6.0",
+    "prettier": "^3.8.4",
+    "prettier-plugin-svelte": "^4.1.0",
+    "svelte-check": "^4.6.0",
+    "typescript-eslint": "^8.61.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.8.0",
+    "hono": "^4.12.25",
+    "svelte": "^5.56.3",
+    "zod": "^4.4.3"
+  }
+}
